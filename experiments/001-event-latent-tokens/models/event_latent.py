@@ -212,7 +212,7 @@ class EventLatentModel(nn.Module):
 
     def __init__(
         self,
-        d_model: int = 1536,
+        d_model: int = 3584,
         n_latent: int = 2,
         top_m: int = 8,
         K: int = 8,
