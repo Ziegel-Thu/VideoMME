@@ -14,8 +14,26 @@ import torch.nn.functional as F
 import math
 
 
+class SegmentPositionalEncoding(nn.Module):
+    """Segment-level 位置编码，让模型感知时间顺序"""
+
+    def __init__(self, d_model: int, max_segments: int = 512):
+        super().__init__()
+        self.pos_embed = nn.Embedding(max_segments, d_model)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """x: (B, M, D) → (B, M, D) with positional encoding added"""
+        B, M, D = x.shape
+        positions = torch.arange(M, device=x.device)
+        return x + self.pos_embed(positions).unsqueeze(0)
+
+
 class SegmentLatentCompressor(nn.Module):
-    """Phase 1: 将每段 dense feature 压缩为 n_latent 个 latent tokens (VoCo-style)"""
+    """Phase 1: 将每段 feature 压缩为 n_latent 个 latent tokens
+
+    当输入为单个 pooled embedding (T=1) 时，退化为 MLP 投影;
+    当输入为多个 patch tokens (T>1) 时，使用 cross-attention 压缩。
+    """
 
     def __init__(self, d_model: int, n_latent: int = 2, n_heads: int = 8):
         super().__init__()
@@ -35,32 +53,32 @@ class SegmentLatentCompressor(nn.Module):
         )
         self.norm2 = nn.LayerNorm(d_model)
 
+        # T=1 退化路径: 简单 MLP 投影
+        self.single_token_proj = nn.Sequential(
+            nn.Linear(d_model, d_model * 2),
+            nn.GELU(),
+            nn.Linear(d_model * 2, d_model * n_latent),
+        )
+
     def forward(self, segment_features: torch.Tensor) -> torch.Tensor:
         """
         Args:
-            segment_features: (B, M, D) — M 段，每段 1 个 pooled embedding
-                              或 (B, M, T, D) — M 段，每段 T 个 patch tokens
+            segment_features: (B, M, D) 或 (B, M, T, D)
         Returns:
-            segment_latents: (B, M, n_latent, D) — 每段 n_latent 个 latent tokens
+            segment_latents: (B, M, n_latent, D)
         """
         if segment_features.dim() == 3:
-            # 每段 1 个 embedding → 扩展为 (B, M, 1, D)
-            segment_features = segment_features.unsqueeze(2)
+            # T=1: 用 MLP 投影代替退化的 cross-attention
+            B, M, D = segment_features.shape
+            projected = self.single_token_proj(segment_features)  # (B, M, D*n_latent)
+            return projected.reshape(B, M, self.n_latent, D)
 
         B, M, T, D = segment_features.shape
-
-        # 展开为 (B*M, T, D)
         x = segment_features.reshape(B * M, T, D)
-
-        # Latent queries: (B*M, n_latent, D)
         queries = self.latent_slots.unsqueeze(0).expand(B * M, -1, -1)
-
-        # Cross-attention
         latents, _ = self.cross_attn(queries, x, x)
         latents = self.norm(latents + queries)
         latents = self.norm2(latents + self.ffn(latents))
-
-        # Reshape: (B, M, n_latent, D)
         return latents.reshape(B, M, self.n_latent, D)
 
 
@@ -69,7 +87,6 @@ class SegmentSelector(nn.Module):
 
     def __init__(self, d_model: int):
         super().__init__()
-        # 问题-段落相关性打分
         self.query_proj = nn.Linear(d_model, d_model)
         self.segment_proj = nn.Linear(d_model, d_model)
         self.score_head = nn.Sequential(
@@ -83,36 +100,37 @@ class SegmentSelector(nn.Module):
         segment_latents: torch.Tensor,
         question_embed: torch.Tensor,
         top_m: int = 8,
+        mask: torch.Tensor = None,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Args:
-            segment_latents: (B, M, n_latent, D) — 每段的 latent tokens
-            question_embed: (B, D) — 问题的 pooled embedding
+            segment_latents: (B, M, n_latent, D)
+            question_embed: (B, D)
             top_m: 选出的段数
+            mask: (B, M) — True 表示有效段，False 表示 padding
 
         Returns:
-            selected_latents: (B, m, n_latent, D) — 选出的段的 latent tokens
-            selected_indices: (B, m) — 选出的段索引
-            scores: (B, M) — 所有段的分数
+            selected_latents: (B, m, n_latent, D)
+            selected_indices: (B, m)
+            scores: (B, M)
         """
         B, M, n_latent, D = segment_latents.shape
-
-        # 每段取 mean pool 作为段表示
         seg_repr = segment_latents.mean(dim=2)  # (B, M, D)
 
-        q = self.query_proj(question_embed).unsqueeze(1).expand(-1, M, -1)  # (B, M, D)
-        s = self.segment_proj(seg_repr)  # (B, M, D)
-
-        combined = torch.cat([q, s], dim=-1)  # (B, M, 2D)
+        q = self.query_proj(question_embed).unsqueeze(1).expand(-1, M, -1)
+        s = self.segment_proj(seg_repr)
+        combined = torch.cat([q, s], dim=-1)
         scores = self.score_head(combined).squeeze(-1)  # (B, M)
 
-        # Top-m selection
+        # 将 padding 位置的分数设为 -inf
+        if mask is not None:
+            scores = scores.masked_fill(~mask, float("-inf"))
+
         top_m = min(top_m, M)
         _, indices = scores.topk(top_m, dim=-1)  # (B, m)
 
-        # Gather selected latents
         indices_expanded = indices.unsqueeze(2).unsqueeze(3).expand(-1, -1, n_latent, D)
-        selected = torch.gather(segment_latents, 1, indices_expanded)  # (B, m, n_latent, D)
+        selected = torch.gather(segment_latents, 1, indices_expanded)
 
         return selected, indices, scores
 
@@ -124,11 +142,8 @@ class EventLatentSlots(nn.Module):
         super().__init__()
         self.K = K
         self.d_model = d_model
-
-        # Learnable event slots
         self.event_slots = nn.Parameter(torch.randn(K, d_model) * 0.02)
 
-        # Multi-layer cross-attention
         self.layers = nn.ModuleList()
         for _ in range(n_layers):
             self.layers.append(nn.ModuleDict({
@@ -145,17 +160,12 @@ class EventLatentSlots(nn.Module):
     def forward(self, selected_latents: torch.Tensor) -> torch.Tensor:
         """
         Args:
-            selected_latents: (B, m, n_latent, D) — 选中段的 latent tokens
-
+            selected_latents: (B, m, n_latent, D)
         Returns:
-            event_tokens: (B, K, D) — K 个 event latent tokens
+            event_tokens: (B, K, D)
         """
         B, m, n_latent, D = selected_latents.shape
-
-        # Flatten: (B, m * n_latent, D)
         kv = selected_latents.reshape(B, m * n_latent, D)
-
-        # Event queries: (B, K, D)
         queries = self.event_slots.unsqueeze(0).expand(B, -1, -1)
 
         for layer in self.layers:
@@ -167,44 +177,52 @@ class EventLatentSlots(nn.Module):
 
 
 class TemporalHead(nn.Module):
-    """Phase 2.3: 从 event tokens 解码 segment-level 时间分布"""
+    """Phase 2.3: 从 event tokens 解码 segment-level 时间分布
 
-    def __init__(self, d_model: int, max_segments: int = 256):
+    使用 event-to-segment cross-attention 而非简单 dot product，
+    以支持多段 grounding 和更强的表达力。
+    """
+
+    def __init__(self, d_model: int, n_heads: int = 8):
         super().__init__()
-        self.max_segments = max_segments
-
-        # 从 event tokens pool 出时间表示，再预测每个 segment 的概率
-        self.pool = nn.Sequential(
-            nn.Linear(d_model, d_model),
+        self.cross_attn = nn.MultiheadAttention(d_model, n_heads, batch_first=True)
+        self.norm = nn.LayerNorm(d_model)
+        self.score_proj = nn.Sequential(
+            nn.Linear(d_model, d_model // 2),
             nn.GELU(),
+            nn.Linear(d_model // 2, 1),
         )
-        # 与 segment latents 做 dot product 得到分布
-        self.temp_proj = nn.Linear(d_model, d_model)
 
     def forward(
         self,
         event_tokens: torch.Tensor,
         all_segment_latents: torch.Tensor,
+        mask: torch.Tensor = None,
     ) -> torch.Tensor:
         """
         Args:
-            event_tokens: (B, K, D) — event latent tokens
-            all_segment_latents: (B, M, n_latent, D) — 所有段的 latent tokens
+            event_tokens: (B, K, D)
+            all_segment_latents: (B, M, n_latent, D)
+            mask: (B, M) — True 表示有效段
 
         Returns:
-            segment_probs: (B, M) — 每个 segment 是证据段的概率
+            segment_logits: (B, M) — 每个 segment 是证据段的 logit
         """
-        # Pool event tokens: (B, D)
-        event_repr = self.pool(event_tokens.mean(dim=1))  # (B, D)
-        event_repr = self.temp_proj(event_repr)  # (B, D)
+        B, M, n_latent, D = all_segment_latents.shape
+        seg_repr = all_segment_latents.mean(dim=2)  # (B, M, D)
 
-        # 每段取 mean: (B, M, D)
-        seg_repr = all_segment_latents.mean(dim=2)
+        # Segment queries attend to event tokens
+        # key_padding_mask 对 event tokens 不需要（都有效）
+        attended, _ = self.cross_attn(seg_repr, event_tokens, event_tokens)
+        attended = self.norm(seg_repr + attended)  # (B, M, D)
 
-        # Dot product: (B, M)
-        logits = torch.einsum("bd,bmd->bm", event_repr, seg_repr)
+        logits = self.score_proj(attended).squeeze(-1)  # (B, M)
 
-        return logits  # raw logits, apply sigmoid/softmax outside
+        # Mask padding
+        if mask is not None:
+            logits = logits.masked_fill(~mask, float("-inf"))
+
+        return logits
 
 
 class EventLatentModel(nn.Module):
@@ -217,47 +235,50 @@ class EventLatentModel(nn.Module):
         top_m: int = 8,
         K: int = 8,
         n_heads: int = 8,
+        max_segments: int = 512,
     ):
         super().__init__()
         self.top_m = top_m
         self.d_model = d_model
 
+        self.pos_encoding = SegmentPositionalEncoding(d_model, max_segments)
         self.compressor = SegmentLatentCompressor(d_model, n_latent, n_heads)
         self.selector = SegmentSelector(d_model)
         self.event_slots = EventLatentSlots(d_model, K, n_heads)
-        self.temporal_head = TemporalHead(d_model)
+        self.temporal_head = TemporalHead(d_model, n_heads)
 
     def forward(
         self,
         segment_features: torch.Tensor,
         question_embed: torch.Tensor,
+        mask: torch.Tensor = None,
     ) -> dict:
         """
         Args:
             segment_features: (B, M, D) — 每段 1 个 pooled embedding
             question_embed: (B, D) — 问题 embedding
+            mask: (B, M) — True 表示有效段，None 表示全部有效
 
         Returns:
-            dict with:
-                segment_logits: (B, M) — temporal grounding 分布
-                selected_indices: (B, m) — 选中的段
-                selector_scores: (B, M) — selector 分数
-                event_tokens: (B, K, D) — event latent tokens
-                segment_latents: (B, M, n_latent, D) — 所有段 latent
+            dict with segment_logits, selected_indices, selector_scores,
+                      event_tokens, segment_latents
         """
+        # 添加位置编码
+        segment_features = self.pos_encoding(segment_features)
+
         # Phase 1: Compress
         segment_latents = self.compressor(segment_features)
 
         # Phase 2.1: Select top-m
         selected_latents, selected_indices, selector_scores = self.selector(
-            segment_latents, question_embed, self.top_m
+            segment_latents, question_embed, self.top_m, mask
         )
 
         # Phase 2.2: Extract event tokens
         event_tokens = self.event_slots(selected_latents)
 
         # Phase 2.3: Temporal grounding
-        segment_logits = self.temporal_head(event_tokens, segment_latents)
+        segment_logits = self.temporal_head(event_tokens, segment_latents, mask)
 
         return {
             "segment_logits": segment_logits,

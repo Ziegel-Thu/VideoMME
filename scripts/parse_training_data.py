@@ -57,7 +57,9 @@ def parse_open_o3_video():
                 reasoning = item.get("reasoning_process", "")
                 inline_times = re.findall(r"at<t>([\d.]+)</t>s", reasoning)
                 for t in inline_times:
-                    segments.append([float(t), float(t)])
+                    # 点时间戳扩展为 ±2s 窗口，避免零长区间
+                    t_val = float(t)
+                    segments.append([max(0, t_val - 2.0), t_val + 2.0])
 
             if not segments:
                 continue
