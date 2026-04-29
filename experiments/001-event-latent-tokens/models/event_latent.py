@@ -22,10 +22,16 @@ class SegmentPositionalEncoding(nn.Module):
         self.pos_embed = nn.Embedding(max_segments, d_model)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """x: (B, M, D) → (B, M, D) with positional encoding added"""
-        B, M, D = x.shape
-        positions = torch.arange(M, device=x.device)
-        return x + self.pos_embed(positions).unsqueeze(0)
+        """x: (B, M, D) 或 (B, M, T, D) → 加段级位置编码"""
+        if x.dim() == 3:
+            B, M, D = x.shape
+            positions = torch.arange(M, device=x.device)
+            return x + self.pos_embed(positions).unsqueeze(0)
+        elif x.dim() == 4:
+            B, M, T, D = x.shape
+            positions = torch.arange(M, device=x.device)
+            # (1, M, 1, D) broadcast to (B, M, T, D)
+            return x + self.pos_embed(positions).unsqueeze(0).unsqueeze(2)
 
 
 class SegmentLatentCompressor(nn.Module):
