@@ -1,0 +1,272 @@
+"""
+MVP 训练: Latent Visual Bottleneck on Qwen2.5-VL-7B
+
+用法:
+  # Overfit test (1 batch)
+  python train_mvp.py --overfit --epochs 20
+
+  # Bottleneck vs No-Bottleneck 对比
+  python train_mvp.py --bottleneck --epochs 5
+  python train_mvp.py --epochs 5
+"""
+
+import os
+import sys
+import json
+import torch
+import torch.nn.functional as F
+import argparse
+from torch.utils.data import Dataset, DataLoader
+from tqdm import tqdm
+from PIL import Image
+
+sys.path.insert(0, os.path.dirname(__file__))
+from mvp import setup_model_and_tokenizer, build_bottleneck_mask
+
+
+# ============================================================
+# Dataset
+# ============================================================
+
+class ImageQADataset(Dataset):
+    """加载 Open-o3-Video 数据，用视频的关键帧当图片做 QA"""
+
+    def __init__(self, evidence_path, video_dir, processor, tokenizer, latent_tokens, max_samples=None):
+        self.processor = processor
+        self.tokenizer = tokenizer
+        self.latent_tokens = latent_tokens
+        self.latent_str = "".join(latent_tokens)
+        self.video_dir = video_dir
+
+        # 加载标注
+        samples = []
+        with open(evidence_path) as f:
+            for line in f:
+                d = json.loads(line)
+                samples.append(d)
+
+        # 过滤有视频文件的
+        import glob
+        video_index = {}
+        for mp4 in glob.glob(os.path.join(video_dir, "**/*.mp4"), recursive=True):
+            video_index[os.path.basename(mp4)] = mp4
+
+        self.samples = []
+        for s in samples:
+            vname = os.path.basename(s["video_path"])
+            if vname in video_index:
+                s["_video_local"] = video_index[vname]
+                self.samples.append(s)
+
+        if max_samples:
+            self.samples = self.samples[:max_samples]
+
+        print(f"Dataset: {len(self.samples)} samples")
+
+    def __len__(self):
+        return len(self.samples)
+
+    def _extract_keyframe(self, video_path, time_sec):
+        """从视频中提取指定时间的帧作为图片"""
+        import decord
+        try:
+            vr = decord.VideoReader(video_path)
+            fps = vr.get_avg_fps()
+            frame_idx = min(int(time_sec * fps), len(vr) - 1)
+            frame = vr[frame_idx].numpy()
+            return Image.fromarray(frame)
+        except Exception:
+            return Image.new("RGB", (224, 224), color="gray")
+
+    def __getitem__(self, idx):
+        sample = self.samples[idx]
+
+        # 取证据时间段中间帧作为图片
+        segs = sample["evidence_segments"]
+        mid_time = (segs[0][0] + segs[0][1]) / 2
+        img = self._extract_keyframe(sample["_video_local"], mid_time)
+
+        question = sample["question"]
+        answer = sample["answer"]
+
+        return {
+            "image": img,
+            "question": question,
+            "answer": answer,
+        }
+
+
+def collate_fn_factory(processor, tokenizer, latent_tokens):
+    """返回一个 collate function，动态处理 batch"""
+    from qwen_vl_utils import process_vision_info
+
+    latent_str = "".join(latent_tokens)
+
+    def collate_fn(batch):
+        texts = []
+        all_images = []
+
+        for item in batch:
+            messages = [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "image", "image": item["image"]},
+                        {"type": "text", "text": f"{latent_str}\n{item['question']}"},
+                    ],
+                },
+                {
+                    "role": "assistant",
+                    "content": [{"type": "text", "text": item["answer"]}],
+                },
+            ]
+            text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=False)
+            texts.append(text)
+
+            image_inputs, _ = process_vision_info(messages)
+            all_images.extend(image_inputs)
+
+        inputs = processor(
+            text=texts,
+            images=all_images if all_images else None,
+            return_tensors="pt",
+            padding=True,
+        )
+
+        # 构造 labels: 只在 answer 部分计算 loss
+        input_ids = inputs["input_ids"]
+        labels = input_ids.clone()
+
+        im_start_id = tokenizer.convert_tokens_to_ids("<|im_start|>")
+        im_end_id = tokenizer.convert_tokens_to_ids("<|im_end|>")
+
+        for b in range(input_ids.shape[0]):
+            ids = input_ids[b].tolist()
+            # 找最后一个 <|im_start|>（assistant 的开始）
+            last_start = 0
+            for i, tid in enumerate(ids):
+                if tid == im_start_id:
+                    last_start = i
+            # mask 掉 assistant header 之前的所有 token
+            # assistant header: <|im_start|>assistant\n → 大约 3 个 token
+            labels[b, :last_start + 3] = -100
+            # 也 mask 掉 padding
+            pad_id = tokenizer.pad_token_id or 0
+            labels[b, input_ids[b] == pad_id] = -100
+
+        inputs["labels"] = labels
+        return inputs
+
+    return collate_fn
+
+
+# ============================================================
+# Training
+# ============================================================
+
+def train(args):
+    device = torch.device("cuda")
+
+    # 模型
+    model, processor, tokenizer, latent_token_ids = setup_model_and_tokenizer(
+        K=args.K, lora_r=args.lora_r
+    )
+    latent_tokens = [f"<latent_{i}>" for i in range(args.K)]
+
+    # 数据
+    dataset = ImageQADataset(
+        args.evidence_path,
+        args.video_dir,
+        processor, tokenizer, latent_tokens,
+        max_samples=args.max_samples,
+    )
+
+    collate = collate_fn_factory(processor, tokenizer, latent_tokens)
+
+    if args.overfit:
+        from torch.utils.data import Subset
+        subset = Subset(dataset, range(min(args.batch_size, len(dataset))))
+        loader = DataLoader(subset, batch_size=args.batch_size, collate_fn=collate)
+        print(f"Overfit mode: {len(subset)} samples")
+    else:
+        loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, collate_fn=collate)
+
+    # Optimizer
+    optimizer = torch.optim.AdamW(
+        [p for p in model.parameters() if p.requires_grad],
+        lr=args.lr, weight_decay=0.01
+    )
+
+    # Training loop
+    model.train()
+    for epoch in range(args.epochs):
+        total_loss = 0
+        n = 0
+
+        pbar = tqdm(loader, desc=f"Epoch {epoch+1}/{args.epochs}")
+        for batch in pbar:
+            # Move to device
+            batch = {k: v.to(device) if isinstance(v, torch.Tensor) else v
+                     for k, v in batch.items()}
+
+            # 构造 bottleneck mask
+            hooks = []
+            if args.bottleneck:
+                custom_mask = build_bottleneck_mask(
+                    batch["input_ids"], latent_token_ids, enable_bottleneck=True
+                ).to(device, dtype=torch.bfloat16)
+
+                # Hook 注入: 在每个 attention layer 替换 mask
+                def make_hook(mask_4d):
+                    def hook_fn(module, args, kwargs):
+                        if "attention_mask" in kwargs:
+                            kwargs["attention_mask"] = mask_4d
+                        return args, kwargs
+                    return hook_fn
+
+                # PEFT path: model.base_model.model.model.language_model.layers
+                lang_model = model.base_model.model.model.language_model
+                for layer in lang_model.layers:
+                    h = layer.self_attn.register_forward_pre_hook(
+                        make_hook(custom_mask), with_kwargs=True
+                    )
+                    hooks.append(h)
+
+            outputs = model(**batch)
+            loss = outputs.loss
+
+            # 移除 hooks
+            for h in hooks:
+                h.remove()
+
+            optimizer.zero_grad()
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            optimizer.step()
+
+            total_loss += loss.item()
+            n += 1
+            pbar.set_postfix(loss=f"{loss.item():.4f}")
+
+        avg = total_loss / max(n, 1)
+        print(f"  Epoch {epoch+1}: avg_loss={avg:.4f}")
+
+    print(f"\nDone. bottleneck={args.bottleneck}")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--evidence_path",
+                        default="/home/v-shuzheng/video/data/parsed/temporal_evidence.jsonl")
+    parser.add_argument("--video_dir",
+                        default="/home/v-shuzheng/video/data/open-o3-video/videos/stgr")
+    parser.add_argument("--K", type=int, default=8)
+    parser.add_argument("--lora_r", type=int, default=16)
+    parser.add_argument("--batch_size", type=int, default=1)
+    parser.add_argument("--lr", type=float, default=2e-5)
+    parser.add_argument("--epochs", type=int, default=10)
+    parser.add_argument("--max_samples", type=int, default=None)
+    parser.add_argument("--bottleneck", action="store_true")
+    parser.add_argument("--overfit", action="store_true")
+    args = parser.parse_args()
+    train(args)

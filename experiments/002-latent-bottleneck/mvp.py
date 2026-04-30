@@ -27,13 +27,12 @@ def setup_model_and_tokenizer(
 ):
     """加载 Qwen2.5-VL，加 latent tokens，配 LoRA"""
 
-    # 加载模型（用 eager attention 以支持自定义 mask）
+    # 加载模型（用 sdpa attention）
     model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
         model_name,
         dtype=torch.bfloat16,
-        attn_implementation="eager",
-        device_map="auto",
-    )
+        attn_implementation="sdpa",
+    ).to("cuda")
 
     processor = AutoProcessor.from_pretrained(model_name)
     tokenizer = processor.tokenizer
@@ -62,10 +61,20 @@ def setup_model_and_tokenizer(
 
     # 解冻 latent token 的 embedding
     embed_layer = model.get_input_embeddings()
+    # 初始化 latent token embeddings
     for tid in latent_token_ids:
         embed_layer.weight.data[tid].normal_(mean=0.0, std=0.02)
-    # peft 会冻 embeddings，手动解冻 latent 部分
-    embed_layer.weight.requires_grad = True
+    # 解冻整个 embedding 但用 hook 只更新 latent 行
+    embed_layer.weight.requires_grad_(True)
+
+    latent_ids_set = set(latent_token_ids)
+    def embedding_grad_hook(grad):
+        mask = torch.zeros_like(grad)
+        for tid in latent_ids_set:
+            mask[tid] = 1.0
+        return grad * mask
+
+    embed_layer.weight.register_hook(embedding_grad_hook)
 
     model.print_trainable_parameters()
 
@@ -83,67 +92,50 @@ def build_bottleneck_mask(
     vision_end_id: int = 151653,
     enable_bottleneck: bool = True,
 ) -> torch.Tensor:
-    """构造 4D bottleneck attention mask。
-
-    在 causal mask 基础上，额外 block：
-    - latent 之后的 token（question + answer）不能 attend 到 vision tokens
-    - latent 之后的 token 可以 attend 到 latent + text
-
-    Args:
-        input_ids: (B, L)
-        latent_token_ids: latent token 的 id 列表
-        vision_start_id: <|vision_start|> 的 token id
-        vision_end_id: <|vision_end|> 的 token id
-        enable_bottleneck: 是否启用 bottleneck（False = 标准 causal）
-
-    Returns:
-        attention_mask: (B, 1, L, L) — 0 表示可 attend, -inf 表示 block
-    """
+    """构造 4D bottleneck attention mask（向量化，无 Python 循环）。"""
     B, L = input_ids.shape
     device = input_ids.device
 
-    # 基础 causal mask: 下三角
-    causal = torch.triu(torch.ones(L, L, device=device), diagonal=1).bool()
+    # 基础 causal mask
+    causal = torch.triu(torch.ones(L, L, device=device, dtype=torch.bool), diagonal=1)
     mask = torch.where(causal, float("-inf"), 0.0)
     mask = mask.unsqueeze(0).unsqueeze(0).expand(B, 1, L, L).clone()
 
     if not enable_bottleneck:
         return mask
 
-    latent_set = set(latent_token_ids)
+    latent_set = torch.tensor(latent_token_ids, device=device)
 
     for b in range(B):
-        ids = input_ids[b].tolist()
+        ids = input_ids[b]
 
-        # 找 vision token 范围（vision_start 和 vision_end 之间的所有 token）
-        vision_positions = set()
-        in_vision = False
-        for i, tid in enumerate(ids):
-            if tid == vision_start_id:
-                in_vision = True
-                vision_positions.add(i)
-            elif tid == vision_end_id:
-                vision_positions.add(i)
-                in_vision = False
-            elif in_vision:
-                vision_positions.add(i)
+        # 找 vision 区间：vision_start 到 vision_end 之间
+        is_vision = torch.zeros(L, dtype=torch.bool, device=device)
+        starts = (ids == vision_start_id).nonzero(as_tuple=True)[0]
+        ends = (ids == vision_end_id).nonzero(as_tuple=True)[0]
+        for s, e in zip(starts, ends):
+            is_vision[s:e+1] = True
 
         # 找 latent token 位置
-        latent_positions = set()
-        for i, tid in enumerate(ids):
-            if tid in latent_set:
-                latent_positions.add(i)
+        is_latent = (ids.unsqueeze(-1) == latent_set).any(-1)
+        latent_pos = is_latent.nonzero(as_tuple=True)[0]
 
-        if not vision_positions or not latent_positions:
+        if not is_vision.any() or len(latent_pos) == 0:
             continue
 
-        last_latent = max(latent_positions)
+        last_latent = latent_pos[-1].item()
 
-        # Bottleneck: last_latent 之后的所有 token 不能 attend 到 vision positions
-        for i in range(last_latent + 1, L):
-            for j in vision_positions:
-                if j <= i:  # 只 block causal 范围内的
-                    mask[b, 0, i, j] = float("-inf")
+        # 所有 last_latent 之后的 token → 不能看 vision positions
+        # 构造 block mask: (L,) × (L,) → (L, L)
+        after_latent = torch.arange(L, device=device) > last_latent  # (L,)
+        vision_cols = is_vision  # (L,)
+
+        # block[i,j] = True if i > last_latent AND j is vision AND j <= i (causal)
+        block = after_latent.unsqueeze(1) & vision_cols.unsqueeze(0)  # (L, L)
+        causal_valid = torch.arange(L, device=device).unsqueeze(1) >= torch.arange(L, device=device).unsqueeze(0)
+        block = block & causal_valid
+
+        mask[b, 0, block] = float("-inf")
 
     return mask
 
