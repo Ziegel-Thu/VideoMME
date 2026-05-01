@@ -116,32 +116,34 @@ python train_mvp.py \
 
 ## 当前结果
 
-### Overfit Test ✅
+### 第一轮（temporal QA 数据）❌ 失败
 
-| 指标 | 值 |
-|------|-----|
-| 样本数 | 1 (单 batch) |
-| Bottleneck | ON |
-| 起始 loss | ~2.94 |
-| 最终 loss | 0.0000 |
-| Epoch 数 | 50 |
+| 指标 | bn-on | bn-off |
+|------|-------|--------|
+| Epoch 1 val_loss | 1.1086 | 1.1078 |
+| Sanity: normal | 0.2873 | — |
+| Sanity: blank vision | 0.2879 | — |
+| Sanity: shuffled | 0.2873 | — |
 
-**结论**：bottleneck mask + LoRA + latent token embedding 的梯度通路完整，模型可正常学习。
+**结论**：blank/shuffled ≈ normal → 模型没在用视觉信息，全靠语言先验。
+**原因**：temporal QA 数据（Q=事件描述, A=时间段）不需要看图就能猜答案。
 
-### 完整训练（进行中）
+### 第二轮（MCQ + temporal-spatial 数据）🔄 进行中
 
-| 配置 | 数据量 | Epochs | 状态 |
-|------|--------|--------|------|
-| bn-on | 7147 | 5 | 训练中 |
-| bn-off | 7147 | 5 | 待启动 |
+| 配置 | 数据 | Epochs | 状态 |
+|------|------|--------|------|
+| bn-on | 7758 visual_qa | 3 | 训练中 |
+| bn-off | 7758 visual_qa | 3 | 训练中 |
 
-训练参数：591M trainable / 8.3B total (7.1%)，~1.6 it/s (A100)。
+数据切换为必须看图才能答对的 MCQ + temporal-spatial QA。
+Epoch 1 完成后自动跑 sanity check（tmux: auto-sanity）。
 
 ---
 
 ## 关键设计决策
 
-1. **SDPA + hook 注入 mask**：Qwen2.5-VL 使用 SDPA attention，无法直接传 4D mask 到 forward。通过 `register_forward_pre_hook` 在每层 attention 的输入中替换 mask。
-2. **Latent token embedding 只更新 latent 行**：用 grad hook 把 embedding 梯度中非 latent 行置零，避免影响其他 token。
-3. **Vision encoder 完全冻结**：只训练 LoRA + latent embedding，减小计算开销。
-4. **关键帧采样**：从 evidence segment 中间时刻提取单帧，MVP 阶段用图片近似视频。
+1. **SDPA + hook 注入 mask**：通过 `register_forward_pre_hook` 在每层 attention 替换 mask
+2. **Latent token embedding 只更新 latent 行**：grad hook 把非 latent 行梯度置零
+3. **Vision encoder 完全冻结**：只训练 LoRA + latent embedding
+4. **关键帧采样**：从视频中间帧提取单帧，MVP 阶段用图片近似视频
+5. **数据必须视觉依赖**：temporal QA 不行，MCQ/visual QA 才行（教训 2）
