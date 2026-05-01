@@ -29,34 +29,20 @@ from mvp import setup_model_and_tokenizer, build_bottleneck_mask
 # ============================================================
 
 class ImageQADataset(Dataset):
-    """加载 Open-o3-Video 数据，用视频的关键帧当图片做 QA"""
+    """加载视觉 QA 数据（MCQ + temporal-spatial），用视频关键帧当图片"""
 
-    def __init__(self, evidence_path, video_dir, processor, tokenizer, latent_tokens, max_samples=None):
+    def __init__(self, data_path, processor, tokenizer, latent_tokens, max_samples=None):
         self.processor = processor
         self.tokenizer = tokenizer
         self.latent_tokens = latent_tokens
         self.latent_str = "".join(latent_tokens)
-        self.video_dir = video_dir
-
-        # 加载标注
-        samples = []
-        with open(evidence_path) as f:
-            for line in f:
-                d = json.loads(line)
-                samples.append(d)
-
-        # 过滤有视频文件的
-        import glob
-        video_index = {}
-        for mp4 in glob.glob(os.path.join(video_dir, "**/*.mp4"), recursive=True):
-            video_index[os.path.basename(mp4)] = mp4
 
         self.samples = []
-        for s in samples:
-            vname = os.path.basename(s["video_path"])
-            if vname in video_index:
-                s["_video_local"] = video_index[vname]
-                self.samples.append(s)
+        with open(data_path) as f:
+            for line in f:
+                d = json.loads(line)
+                if os.path.exists(d.get("video_path", "")):
+                    self.samples.append(d)
 
         if max_samples:
             self.samples = self.samples[:max_samples]
@@ -66,13 +52,16 @@ class ImageQADataset(Dataset):
     def __len__(self):
         return len(self.samples)
 
-    def _extract_keyframe(self, video_path, time_sec):
-        """从视频中提取指定时间的帧作为图片"""
+    def _extract_keyframe(self, video_path, time_sec=None):
+        """从视频中提取一帧作为图片"""
         import decord
         try:
             vr = decord.VideoReader(video_path)
-            fps = vr.get_avg_fps()
-            frame_idx = min(int(time_sec * fps), len(vr) - 1)
+            if time_sec is not None:
+                fps = vr.get_avg_fps()
+                frame_idx = min(int(time_sec * fps), len(vr) - 1)
+            else:
+                frame_idx = len(vr) // 2  # 取中间帧
             frame = vr[frame_idx].numpy()
             return Image.fromarray(frame)
         except Exception:
@@ -80,19 +69,12 @@ class ImageQADataset(Dataset):
 
     def __getitem__(self, idx):
         sample = self.samples[idx]
-
-        # 取证据时间段中间帧作为图片
-        segs = sample["evidence_segments"]
-        mid_time = (segs[0][0] + segs[0][1]) / 2
-        img = self._extract_keyframe(sample["_video_local"], mid_time)
-
-        question = sample["question"]
-        answer = sample["answer"]
+        img = self._extract_keyframe(sample["video_path"])
 
         return {
             "image": img,
-            "question": question,
-            "answer": answer,
+            "question": sample["question"],
+            "answer": sample["answer"],
         }
 
 
@@ -262,7 +244,6 @@ def train(args):
     # 数据
     dataset = ImageQADataset(
         args.evidence_path,
-        args.video_dir,
         processor, tokenizer, latent_tokens,
         max_samples=args.max_samples,
     )
@@ -294,7 +275,7 @@ def train(args):
     )
 
     # Output dir
-    output_dir = os.path.join(os.path.dirname(__file__), "outputs")
+    output_dir = args.output_dir
     os.makedirs(output_dir, exist_ok=True)
     best_val_loss = float("inf")
 
@@ -361,7 +342,7 @@ def train(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--evidence_path",
-                        default="/home/v-shuzheng/video/data/parsed/temporal_evidence.jsonl")
+                        default="/home/v-shuzheng/video/data/parsed/visual_qa.jsonl")
     parser.add_argument("--video_dir",
                         default="/home/v-shuzheng/video/data/open-o3-video/videos/stgr")
     parser.add_argument("--K", type=int, default=8)
@@ -372,5 +353,6 @@ if __name__ == "__main__":
     parser.add_argument("--max_samples", type=int, default=None)
     parser.add_argument("--bottleneck", action="store_true")
     parser.add_argument("--overfit", action="store_true")
+    parser.add_argument("--output_dir", default=os.path.join(os.path.dirname(__file__), "outputs"))
     args = parser.parse_args()
     train(args)

@@ -132,9 +132,18 @@ def main(args):
     latent_tokens = [f"<latent_{i}>" for i in range(args.K)]
 
     if args.checkpoint:
-        from peft import PeftModel
-        print(f"Loading LoRA checkpoint: {args.checkpoint}")
-        model = PeftModel.from_pretrained(model.base_model.model, args.checkpoint)
+        print(f"Loading checkpoint: {args.checkpoint}")
+        ckpt = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
+        # Load LoRA weights
+        lora_state = ckpt.get("lora_state_dict", {})
+        if lora_state:
+            model.load_state_dict(lora_state, strict=False)
+        # Load latent embeddings
+        latent_embeds = ckpt.get("latent_embeddings", {})
+        embed = model.get_input_embeddings()
+        for tid, emb in latent_embeds.items():
+            embed.weight.data[tid] = emb.to(embed.weight.device)
+        print(f"  Loaded {len(lora_state)} LoRA params, {len(latent_embeds)} latent embeds")
 
     # --- Load dataset ---
     print("Loading dataset...")
