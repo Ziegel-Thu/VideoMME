@@ -161,6 +161,92 @@ def collate_fn_factory(processor, tokenizer, latent_tokens):
 
 
 # ============================================================
+# Hook helpers
+# ============================================================
+
+def install_bottleneck_hooks(model, input_ids, latent_token_ids, device):
+    """Build bottleneck mask and install attention hooks. Returns hook handles."""
+    custom_mask = build_bottleneck_mask(
+        input_ids, latent_token_ids, enable_bottleneck=True
+    ).to(device, dtype=torch.bfloat16)
+
+    def make_hook(mask_4d):
+        def hook_fn(module, args, kwargs):
+            if "attention_mask" in kwargs:
+                kwargs["attention_mask"] = mask_4d
+            return args, kwargs
+        return hook_fn
+
+    hooks = []
+    lang_model = model.base_model.model.model.language_model
+    for layer in lang_model.layers:
+        h = layer.self_attn.register_forward_pre_hook(
+            make_hook(custom_mask), with_kwargs=True
+        )
+        hooks.append(h)
+    return hooks
+
+
+# ============================================================
+# Checkpoint helpers
+# ============================================================
+
+def save_checkpoint(model, tokenizer, latent_token_ids, path, epoch=None, val_loss=None):
+    """Save LoRA weights + latent embeddings."""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+
+    embed = model.get_input_embeddings()
+    latent_embeds = {tid: embed.weight.data[tid].cpu().clone() for tid in latent_token_ids}
+
+    ckpt = {
+        "lora_state_dict": {
+            k: v.cpu() for k, v in model.state_dict().items()
+            if "lora_" in k or "latent" in k
+        },
+        "latent_embeddings": latent_embeds,
+        "latent_token_ids": latent_token_ids,
+    }
+    if epoch is not None:
+        ckpt["epoch"] = epoch
+    if val_loss is not None:
+        ckpt["val_loss"] = val_loss
+
+    torch.save(ckpt, path)
+    print(f"  Checkpoint saved → {path}")
+
+
+# ============================================================
+# Validation loop
+# ============================================================
+
+@torch.no_grad()
+def validate(model, val_loader, latent_token_ids, device, use_bottleneck):
+    """Run validation, return average loss."""
+    model.eval()
+    total_loss = 0.0
+    n = 0
+
+    for batch in val_loader:
+        batch = {k: v.to(device) if isinstance(v, torch.Tensor) else v
+                 for k, v in batch.items()}
+
+        hooks = []
+        if use_bottleneck:
+            hooks = install_bottleneck_hooks(model, batch["input_ids"], latent_token_ids, device)
+
+        outputs = model(**batch)
+
+        for h in hooks:
+            h.remove()
+
+        total_loss += outputs.loss.item()
+        n += 1
+
+    model.train()
+    return total_loss / max(n, 1)
+
+
+# ============================================================
 # Training
 # ============================================================
 
@@ -187,15 +273,30 @@ def train(args):
         from torch.utils.data import Subset
         subset = Subset(dataset, range(min(args.batch_size, len(dataset))))
         loader = DataLoader(subset, batch_size=args.batch_size, collate_fn=collate)
+        val_loader = loader  # overfit mode: val on same data
         print(f"Overfit mode: {len(subset)} samples")
     else:
-        loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, collate_fn=collate)
+        # 90/10 train/val split (deterministic)
+        from torch.utils.data import Subset
+        n_total = len(dataset)
+        n_val = max(1, int(n_total * 0.1))
+        n_train = n_total - n_val
+        train_subset = Subset(dataset, range(n_train))
+        val_subset = Subset(dataset, range(n_train, n_total))
+        loader = DataLoader(train_subset, batch_size=args.batch_size, shuffle=True, collate_fn=collate)
+        val_loader = DataLoader(val_subset, batch_size=args.batch_size, collate_fn=collate)
+        print(f"Train: {n_train} samples, Val: {n_val} samples")
 
     # Optimizer
     optimizer = torch.optim.AdamW(
         [p for p in model.parameters() if p.requires_grad],
         lr=args.lr, weight_decay=0.01
     )
+
+    # Output dir
+    output_dir = os.path.join(os.path.dirname(__file__), "outputs")
+    os.makedirs(output_dir, exist_ok=True)
+    best_val_loss = float("inf")
 
     # Training loop
     model.train()
@@ -212,25 +313,7 @@ def train(args):
             # 构造 bottleneck mask
             hooks = []
             if args.bottleneck:
-                custom_mask = build_bottleneck_mask(
-                    batch["input_ids"], latent_token_ids, enable_bottleneck=True
-                ).to(device, dtype=torch.bfloat16)
-
-                # Hook 注入: 在每个 attention layer 替换 mask
-                def make_hook(mask_4d):
-                    def hook_fn(module, args, kwargs):
-                        if "attention_mask" in kwargs:
-                            kwargs["attention_mask"] = mask_4d
-                        return args, kwargs
-                    return hook_fn
-
-                # PEFT path: model.base_model.model.model.language_model.layers
-                lang_model = model.base_model.model.model.language_model
-                for layer in lang_model.layers:
-                    h = layer.self_attn.register_forward_pre_hook(
-                        make_hook(custom_mask), with_kwargs=True
-                    )
-                    hooks.append(h)
+                hooks = install_bottleneck_hooks(model, batch["input_ids"], latent_token_ids, device)
 
             outputs = model(**batch)
             loss = outputs.loss
@@ -248,10 +331,31 @@ def train(args):
             n += 1
             pbar.set_postfix(loss=f"{loss.item():.4f}")
 
-        avg = total_loss / max(n, 1)
-        print(f"  Epoch {epoch+1}: avg_loss={avg:.4f}")
+        avg_train = total_loss / max(n, 1)
+        print(f"  Epoch {epoch+1}: train_loss={avg_train:.4f}")
 
-    print(f"\nDone. bottleneck={args.bottleneck}")
+        # --- Validation ---
+        val_loss = validate(model, val_loader, latent_token_ids, device, args.bottleneck)
+        print(f"  Epoch {epoch+1}: val_loss={val_loss:.4f}")
+
+        # Save epoch checkpoint
+        save_checkpoint(
+            model, tokenizer, latent_token_ids,
+            os.path.join(output_dir, f"checkpoint_epoch{epoch+1}.pt"),
+            epoch=epoch + 1, val_loss=val_loss,
+        )
+
+        # Save best model
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            save_checkpoint(
+                model, tokenizer, latent_token_ids,
+                os.path.join(output_dir, "best_model.pt"),
+                epoch=epoch + 1, val_loss=val_loss,
+            )
+            print(f"  ★ New best model (val_loss={val_loss:.4f})")
+
+    print(f"\nDone. bottleneck={args.bottleneck}, best_val_loss={best_val_loss:.4f}")
 
 
 if __name__ == "__main__":
