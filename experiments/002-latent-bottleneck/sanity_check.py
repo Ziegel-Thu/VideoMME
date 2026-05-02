@@ -149,7 +149,6 @@ def main(args):
     print("Loading dataset...")
     dataset = ImageQADataset(
         args.evidence_path,
-        args.video_dir,
         processor, tokenizer, latent_tokens,
         max_samples=args.max_samples,
     )
@@ -242,7 +241,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Bottleneck sanity check")
     parser.add_argument("--evidence_path",
-                        default="/home/v-shuzheng/video/data/parsed/temporal_evidence.jsonl")
+                        default="/home/v-shuzheng/video/data/parsed/visual_qa.jsonl")
     parser.add_argument("--video_dir",
                         default="/home/v-shuzheng/video/data/open-o3-video/videos/stgr")
     parser.add_argument("--K", type=int, default=8)

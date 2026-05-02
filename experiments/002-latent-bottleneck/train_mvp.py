@@ -21,7 +21,7 @@ from tqdm import tqdm
 from PIL import Image
 
 sys.path.insert(0, os.path.dirname(__file__))
-from mvp import setup_model_and_tokenizer, build_bottleneck_mask
+from mvp import setup_model_and_tokenizer, build_bottleneck_mask, build_bottleneck_mask_answer_only
 
 
 # ============================================================
@@ -146,9 +146,10 @@ def collate_fn_factory(processor, tokenizer, latent_tokens):
 # Hook helpers
 # ============================================================
 
-def install_bottleneck_hooks(model, input_ids, latent_token_ids, device):
+def install_bottleneck_hooks(model, input_ids, latent_token_ids, device, mask_mode="livr"):
     """Build bottleneck mask and install attention hooks. Returns hook handles."""
-    custom_mask = build_bottleneck_mask(
+    mask_fn = build_bottleneck_mask if mask_mode == "livr" else build_bottleneck_mask_answer_only
+    custom_mask = mask_fn(
         input_ids, latent_token_ids, enable_bottleneck=True
     ).to(device, dtype=torch.bfloat16)
 
@@ -214,7 +215,7 @@ def validate(model, val_loader, latent_token_ids, device, use_bottleneck):
 
         hooks = []
         if use_bottleneck:
-            hooks = install_bottleneck_hooks(model, batch["input_ids"], latent_token_ids, device)
+            hooks = install_bottleneck_hooks(model, batch["input_ids"], latent_token_ids, device, args.mask_mode)
 
         outputs = model(**batch)
 
@@ -294,7 +295,7 @@ def train(args):
             # 构造 bottleneck mask
             hooks = []
             if args.bottleneck:
-                hooks = install_bottleneck_hooks(model, batch["input_ids"], latent_token_ids, device)
+                hooks = install_bottleneck_hooks(model, batch["input_ids"], latent_token_ids, device, args.mask_mode)
 
             outputs = model(**batch)
             loss = outputs.loss
@@ -352,6 +353,8 @@ if __name__ == "__main__":
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--max_samples", type=int, default=None)
     parser.add_argument("--bottleneck", action="store_true")
+    parser.add_argument("--mask_mode", default="livr", choices=["livr", "answer_only"],
+                        help="livr=block Q+A→Vision, answer_only=block A→Vision only")
     parser.add_argument("--overfit", action="store_true")
     parser.add_argument("--output_dir", default=os.path.join(os.path.dirname(__file__), "outputs"))
     args = parser.parse_args()

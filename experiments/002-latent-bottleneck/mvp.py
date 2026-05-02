@@ -31,7 +31,7 @@ def setup_model_and_tokenizer(
     model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
         model_name,
         dtype=torch.bfloat16,
-        attn_implementation="sdpa",
+        attn_implementation="eager",
     ).to("cuda")
 
     processor = AutoProcessor.from_pretrained(model_name)
@@ -92,7 +92,13 @@ def build_bottleneck_mask(
     vision_end_id: int = 151653,
     enable_bottleneck: bool = True,
 ) -> torch.Tensor:
-    """构造 4D bottleneck attention mask（向量化，无 Python 循环）。"""
+    """构造 LIVR-style 4D bottleneck attention mask。
+
+    LIVR 论文规则:
+      - vision tokens: 正常 causal（只看自己和之前的）
+      - latent tokens: 正常 causal（能看 vision + 之前的）
+      - question + answer tokens: 不能看 vision，只能看 latent + text
+    """
     B, L = input_ids.shape
     device = input_ids.device
 
@@ -109,7 +115,7 @@ def build_bottleneck_mask(
     for b in range(B):
         ids = input_ids[b]
 
-        # 找 vision 区间：vision_start 到 vision_end 之间
+        # 找 vision 区间
         is_vision = torch.zeros(L, dtype=torch.bool, device=device)
         starts = (ids == vision_start_id).nonzero(as_tuple=True)[0]
         ends = (ids == vision_end_id).nonzero(as_tuple=True)[0]
@@ -118,24 +124,27 @@ def build_bottleneck_mask(
 
         # 找 latent token 位置
         is_latent = (ids.unsqueeze(-1) == latent_set).any(-1)
-        latent_pos = is_latent.nonzero(as_tuple=True)[0]
 
-        if not is_vision.any() or len(latent_pos) == 0:
+        if not is_vision.any() or not is_latent.any():
             continue
 
-        last_latent = latent_pos[-1].item()
+        # LIVR 规则: 非 vision 且非 latent 的 token 都不能看 vision
+        # 即：只有 vision 和 latent token 能 attend to vision
+        can_see_vision = is_vision | is_latent  # (L,)
 
-        # 所有 last_latent 之后的 token → 不能看 vision positions
-        # 构造 block mask: (L,) × (L,) → (L, L)
-        after_latent = torch.arange(L, device=device) > last_latent  # (L,)
+        # block[i, j] = True if:
+        #   i 不能看 vision (即 i 不是 vision 也不是 latent)
+        #   AND j 是 vision
+        #   AND j <= i (causal 范围内)
+        blocked_rows = ~can_see_vision  # (L,) — Q/A tokens
         vision_cols = is_vision  # (L,)
-
-        # block[i,j] = True if i > last_latent AND j is vision AND j <= i (causal)
-        block = after_latent.unsqueeze(1) & vision_cols.unsqueeze(0)  # (L, L)
+        block = blocked_rows.unsqueeze(1) & vision_cols.unsqueeze(0)  # (L, L)
         causal_valid = torch.arange(L, device=device).unsqueeze(1) >= torch.arange(L, device=device).unsqueeze(0)
         block = block & causal_valid
 
         mask[b, 0, block] = float("-inf")
+
+    return mask
 
     return mask
 
@@ -289,3 +298,123 @@ def smoke_test():
 
 if __name__ == "__main__":
     smoke_test()
+
+
+def build_bottleneck_mask_answer_only(
+    input_ids: torch.Tensor,
+    latent_token_ids: list[int],
+    vision_start_id: int = 151652,
+    vision_end_id: int = 151653,
+    enable_bottleneck: bool = True,
+) -> torch.Tensor:
+    """旧版 mask：只 block A→Vision，Q 仍可看 Vision"""
+    B, L = input_ids.shape
+    device = input_ids.device
+
+    causal = torch.triu(torch.ones(L, L, device=device, dtype=torch.bool), diagonal=1)
+    mask = torch.where(causal, float("-inf"), 0.0)
+    mask = mask.unsqueeze(0).unsqueeze(0).expand(B, 1, L, L).clone()
+
+    if not enable_bottleneck:
+        return mask
+
+    latent_set = torch.tensor(latent_token_ids, device=device)
+
+    for b in range(B):
+        ids = input_ids[b]
+        is_vision = torch.zeros(L, dtype=torch.bool, device=device)
+        starts = (ids == vision_start_id).nonzero(as_tuple=True)[0]
+        ends = (ids == vision_end_id).nonzero(as_tuple=True)[0]
+        for s, e in zip(starts, ends):
+            is_vision[s:e+1] = True
+
+        is_latent = (ids.unsqueeze(-1) == latent_set).any(-1)
+        latent_pos = is_latent.nonzero(as_tuple=True)[0]
+        if not is_vision.any() or len(latent_pos) == 0:
+            continue
+
+        last_latent = latent_pos[-1].item()
+        # 只 block last_latent 之后的 token → vision
+        after_latent = torch.arange(L, device=device) > last_latent
+        block = after_latent.unsqueeze(1) & is_vision.unsqueeze(0)
+        causal_valid = torch.arange(L, device=device).unsqueeze(1) >= torch.arange(L, device=device).unsqueeze(0)
+        block = block & causal_valid
+        mask[b, 0, block] = float("-inf")
+
+    return mask
+
+
+def build_training_input_video(
+    processor,
+    tokenizer,
+    latent_tokens: list[str],
+    video_path: str,
+    question: str,
+    answer: str,
+    num_frames: int = 8,
+    max_pixels: int = 128 * 28 * 28,
+):
+    """构造视频输入，token 顺序: [vision] [question] [latent] [answer]
+
+    latent 在 question 之后，causal 下能看到 question + vision。
+    """
+    from qwen_vl_utils import process_vision_info
+    import decord
+
+    # 从视频均匀采样 num_frames 帧
+    vr = decord.VideoReader(video_path)
+    total = len(vr)
+    indices = [int(i * total / num_frames) for i in range(num_frames)]
+    frames = [vr[idx].asnumpy() for idx in indices]
+    fps = vr.get_avg_fps()
+    frame_timestamps = [idx / fps for idx in indices]
+
+    # 转成 PIL
+    from PIL import Image
+    pil_frames = [Image.fromarray(f) for f in frames]
+
+    # 保存临时文件给 process_vision_info
+    import tempfile, os
+    tmp_paths = []
+    for i, img in enumerate(pil_frames):
+        p = os.path.join(tempfile.gettempdir(), f"_vframe_{i}.jpg")
+        img.save(p)
+        tmp_paths.append(p)
+
+    latent_str = "".join(latent_tokens)
+
+    # 关键：token 顺序 [video] [question] [latent] [answer]
+    messages = [
+        {
+            "role": "user",
+            "content": [
+                {"type": "video", "video": tmp_paths, "fps": 1.0},
+                {"type": "text", "text": f"{question}\n{latent_str}"},
+            ],
+        },
+        {
+            "role": "assistant",
+            "content": [{"type": "text", "text": answer}],
+        },
+    ]
+
+    text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=False)
+    image_inputs, video_inputs = process_vision_info(messages)
+
+    inputs = processor(
+        text=[text],
+        images=image_inputs,
+        videos=video_inputs,
+        return_tensors="pt",
+        padding=True,
+    )
+
+    # 清理临时文件
+    for p in tmp_paths:
+        os.remove(p)
+
+    # 返回额外信息给 temporal head 用
+    inputs["_frame_timestamps"] = frame_timestamps
+    inputs["_video_duration"] = total / fps
+
+    return inputs
