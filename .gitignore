@@ -1,4 +1,23 @@
+# 数据和论文（太大）
 paper/
+data/
+
+# Python
 __pycache__/
 *.pyc
-data/
+*.egg-info/
+
+# 模型权重和 checkpoint
+*.pt
+*.pth
+*.bin
+*.safetensors
+outputs*/
+
+# 训练日志
+*.log
+
+# OS / IDE
+.DS_Store
+.vscode/
+*.swp
