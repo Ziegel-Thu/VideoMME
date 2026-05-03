@@ -147,3 +147,35 @@ Epoch 1 完成后自动跑 sanity check（tmux: auto-sanity）。
 3. **Vision encoder 完全冻结**：只训练 LoRA + latent embedding
 4. **关键帧采样**：从视频中间帧提取单帧，MVP 阶段用图片近似视频
 5. **数据必须视觉依赖**：temporal QA 不行，MCQ/visual QA 才行（教训 2）
+
+---
+
+## 实验记录
+
+### 单帧实验
+
+| 实验 | 数据 | Epochs | Mask | 数据类型 | BN Zero Δ | 结果 |
+|------|------|--------|------|---------|-----------|------|
+| temporal QA (SDPA) | 7.7K | 5 | LIVR | temporal QA | +0.001 | ❌ SDPA mask 没生效 |
+| MCQ (SDPA) | 19K | 1 | LIVR | MCQ | +0.001 | ❌ SDPA mask 没生效 |
+| MCQ (eager) | 19K | 1 | LIVR | MCQ | +0.001 | ❌ 1ep 不够 |
+| MCQ (eager) | 19K | 5 | LIVR | MCQ | +0.001 | ❌ 5ep 还是不够 (但数据里有 temporal-spatial) |
+| **MCQ v2 (eager)** | **19K** | **3** | **LIVR** | **纯 MCQ** | **+0.35** | **✅ PASS** |
+| MCQ v2 (eager) | 19K | 3 | answer-only | 纯 MCQ | +0.14 | ✅ PASS |
+
+### Multi-frame 实验 (N=4 帧)
+
+| 实验 | 数据 | Epochs | K | BN Zero Δ | 结果 |
+|------|------|--------|---|-----------|------|
+| 全量 19K × 1ep | 19K | 1 | 8 | +0.03 | ❌ epoch 不够 |
+| **1K × 5ep** | **1K** | **5** | **8** | **+0.16** | **✅ PASS** |
+| 1K × 5ep | 1K | 5 | 32 | (checkpoint 丢失) | — |
+| 1K × 5ep | 1K | 5 | 64 | 跑着 | — |
+
+### 关键发现
+
+1. **SDPA 不支持自定义 4D mask** — 必须用 eager attention
+2. **数据类型关键** — temporal QA 靠语言 prior 就能猜，MCQ 才需要看视频
+3. **数据量关键** — 7.7K 不够，19K 纯 MCQ 才 pass
+4. **Epoch 数关键** — multi-frame 下 1 epoch 不够，5 epoch 才 pass
+5. **K=8 够用** — 即使 1482:8 的压缩比，5 epoch 后也能 pass
