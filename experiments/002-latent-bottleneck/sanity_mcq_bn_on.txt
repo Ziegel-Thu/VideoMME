@@ -1,0 +1,58 @@
+============================================================
+Loading model...
+Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 5/5 [00:00<00:00, 51.72it/s]
+The image processor of type `Qwen2VLImageProcessor` is now loaded as a fast processor by default, even if the model checkpoint was saved with a slow processor. This is a breaking change and may produce slightly different outputs. To continue using the slow processor, instantiate this class with `use_fast=False`. Note that this behavior will be extended to all models in a future release.
+trainable params: 591,185,408 || all params: 8,336,953,344 || trainable%: 7.0911
+Loading checkpoint: /home/v-shuzheng/video/experiments/002-latent-bottleneck/outputs_mcq_bn_on/best_model.pt
+  Loaded 584 LoRA params, 8 latent embeds
+Loading dataset...
+Dataset: 30 samples
+Pre-extracting images for shuffled condition...
+
+============================================================
+Condition: Normal (bn ON)
+  bottleneck=ON, image=normal
+------------------------------------------------------------
+Normal (bn ON):   0%|          | 0/30 [00:00<?, ?it/s]Normal (bn ON):   3%|▎         | 1/30 [00:01<00:47,  1.63s/it]Normal (bn ON):   7%|▋         | 2/30 [00:02<00:34,  1.22s/it]Normal (bn ON):  10%|█         | 3/30 [00:03<00:30,  1.12s/it]Normal (bn ON):  13%|█▎        | 4/30 [00:04<00:27,  1.04s/it]Normal (bn ON):  17%|█▋        | 5/30 [00:05<00:24,  1.02it/s]Normal (bn ON):  20%|██        | 6/30 [00:06<00:22,  1.06it/s]Normal (bn ON):  23%|██▎       | 7/30 [00:07<00:21,  1.06it/s]Normal (bn ON):  27%|██▋       | 8/30 [00:07<00:19,  1.11it/s]Normal (bn ON):  30%|███       | 9/30 [00:08<00:18,  1.13it/s]Normal (bn ON):  33%|███▎      | 10/30 [00:09<00:17,  1.12it/s]Normal (bn ON):  37%|███▋      | 11/30 [00:10<00:16,  1.14it/s]Normal (bn ON):  40%|████      | 12/30 [00:11<00:15,  1.13it/s]Normal (bn ON):  43%|████▎     | 13/30 [00:12<00:14,  1.15it/s]Normal (bn ON):  47%|████▋     | 14/30 [00:13<00:14,  1.14it/s]Normal (bn ON):  50%|█████     | 15/30 [00:14<00:13,  1.14it/s]Normal (bn ON):  53%|█████▎    | 16/30 [00:14<00:12,  1.15it/s]Normal (bn ON):  57%|█████▋    | 17/30 [00:16<00:12,  1.02it/s]Normal (bn ON):  60%|██████    | 18/30 [00:17<00:11,  1.01it/s]Normal (bn ON):  63%|██████▎   | 19/30 [00:18<00:10,  1.04it/s]Normal (bn ON):  67%|██████▋   | 20/30 [00:18<00:09,  1.08it/s]Normal (bn ON):  70%|███████   | 21/30 [00:19<00:08,  1.11it/s]Normal (bn ON):  73%|███████▎  | 22/30 [00:20<00:07,  1.12it/s]Normal (bn ON):  77%|███████▋  | 23/30 [00:21<00:06,  1.14it/s]Normal (bn ON):  80%|████████  | 24/30 [00:22<00:05,  1.13it/s]Normal (bn ON):  83%|████████▎ | 25/30 [00:23<00:04,  1.14it/s]Normal (bn ON):  87%|████████▋ | 26/30 [00:24<00:03,  1.15it/s]Normal (bn ON):  90%|█████████ | 27/30 [00:24<00:02,  1.15it/s]Normal (bn ON):  93%|█████████▎| 28/30 [00:25<00:01,  1.17it/s]Normal (bn ON):  97%|█████████▋| 29/30 [00:26<00:00,  1.16it/s]Normal (bn ON): 100%|██████████| 30/30 [00:27<00:00,  1.18it/s]                                                                 → Avg NLL loss: 0.4485
+
+============================================================
+Condition: Blank vision
+  bottleneck=ON, image=blank
+------------------------------------------------------------
+Blank vision:   0%|          | 0/30 [00:00<?, ?it/s]Blank vision:   3%|▎         | 1/30 [00:00<00:25,  1.15it/s]Blank vision:   7%|▋         | 2/30 [00:01<00:24,  1.14it/s]Blank vision:  10%|█         | 3/30 [00:02<00:22,  1.19it/s]Blank vision:  13%|█▎        | 4/30 [00:03<00:21,  1.21it/s]Blank vision:  17%|█▋        | 5/30 [00:04<00:21,  1.19it/s]Blank vision:  20%|██        | 6/30 [00:05<00:20,  1.18it/s]Blank vision:  23%|██▎       | 7/30 [00:05<00:19,  1.15it/s]Blank vision:  27%|██▋       | 8/30 [00:06<00:18,  1.18it/s]Blank vision:  30%|███       | 9/30 [00:07<00:17,  1.19it/s]Blank vision:  33%|███▎      | 10/30 [00:08<00:16,  1.20it/s]Blank vision:  37%|███▋      | 11/30 [00:09<00:16,  1.19it/s]Blank vision:  40%|████      | 12/30 [00:10<00:15,  1.18it/s]Blank vision:  43%|████▎     | 13/30 [00:10<00:14,  1.19it/s]Blank vision:  47%|████▋     | 14/30 [00:11<00:13,  1.19it/s]Blank vision:  50%|█████     | 15/30 [00:12<00:12,  1.17it/s]Blank vision:  53%|█████▎    | 16/30 [00:13<00:11,  1.17it/s]Blank vision:  57%|█████▋    | 17/30 [00:14<00:11,  1.17it/s]Blank vision:  60%|██████    | 18/30 [00:15<00:10,  1.18it/s]Blank vision:  63%|██████▎   | 19/30 [00:16<00:09,  1.17it/s]Blank vision:  67%|██████▋   | 20/30 [00:17<00:08,  1.14it/s]Blank vision:  70%|███████   | 21/30 [00:17<00:07,  1.13it/s]Blank vision:  73%|███████▎  | 22/30 [00:18<00:07,  1.14it/s]Blank vision:  77%|███████▋  | 23/30 [00:19<00:06,  1.16it/s]Blank vision:  80%|████████  | 24/30 [00:20<00:05,  1.15it/s]Blank vision:  83%|████████▎ | 25/30 [00:21<00:04,  1.15it/s]Blank vision:  87%|████████▋ | 26/30 [00:22<00:03,  1.18it/s]Blank vision:  90%|█████████ | 27/30 [00:23<00:02,  1.16it/s]Blank vision:  93%|█████████▎| 28/30 [00:23<00:01,  1.16it/s]Blank vision:  97%|█████████▋| 29/30 [00:24<00:00,  1.15it/s]Blank vision: 100%|██████████| 30/30 [00:25<00:00,  1.14it/s]                                                               → Avg NLL loss: 0.4481
+
+============================================================
+Condition: Shuffled vision
+  bottleneck=ON, image=shuffled
+------------------------------------------------------------
+Shuffled vision:   0%|          | 0/30 [00:00<?, ?it/s]Shuffled vision:   3%|▎         | 1/30 [00:00<00:24,  1.17it/s]Shuffled vision:   7%|▋         | 2/30 [00:01<00:23,  1.18it/s]Shuffled vision:  10%|█         | 3/30 [00:02<00:22,  1.19it/s]Shuffled vision:  13%|█▎        | 4/30 [00:03<00:21,  1.20it/s]Shuffled vision:  17%|█▋        | 5/30 [00:04<00:20,  1.19it/s]Shuffled vision:  20%|██        | 6/30 [00:05<00:20,  1.18it/s]Shuffled vision:  23%|██▎       | 7/30 [00:05<00:19,  1.17it/s]Shuffled vision:  27%|██▋       | 8/30 [00:06<00:18,  1.17it/s]Shuffled vision:  30%|███       | 9/30 [00:07<00:17,  1.17it/s]Shuffled vision:  33%|███▎      | 10/30 [00:08<00:17,  1.17it/s]Shuffled vision:  37%|███▋      | 11/30 [00:09<00:16,  1.17it/s]Shuffled vision:  40%|████      | 12/30 [00:10<00:15,  1.18it/s]Shuffled vision:  43%|████▎     | 13/30 [00:11<00:14,  1.18it/s]Shuffled vision:  47%|████▋     | 14/30 [00:12<00:14,  1.12it/s]Shuffled vision:  50%|█████     | 15/30 [00:12<00:13,  1.14it/s]Shuffled vision:  53%|█████▎    | 16/30 [00:13<00:12,  1.16it/s]Shuffled vision:  57%|█████▋    | 17/30 [00:14<00:11,  1.16it/s]Shuffled vision:  60%|██████    | 18/30 [00:15<00:10,  1.15it/s]Shuffled vision:  63%|██████▎   | 19/30 [00:16<00:09,  1.15it/s]Shuffled vision:  67%|██████▋   | 20/30 [00:17<00:08,  1.16it/s]Shuffled vision:  70%|███████   | 21/30 [00:17<00:07,  1.17it/s]Shuffled vision:  73%|███████▎  | 22/30 [00:18<00:06,  1.19it/s]Shuffled vision:  77%|███████▋  | 23/30 [00:19<00:06,  1.14it/s]Shuffled vision:  80%|████████  | 24/30 [00:20<00:05,  1.03it/s]Shuffled vision:  83%|████████▎ | 25/30 [00:21<00:04,  1.04it/s]Shuffled vision:  87%|████████▋ | 26/30 [00:22<00:03,  1.09it/s]Shuffled vision:  90%|█████████ | 27/30 [00:23<00:02,  1.09it/s]Shuffled vision:  93%|█████████▎| 28/30 [00:24<00:01,  1.10it/s]Shuffled vision:  97%|█████████▋| 29/30 [00:25<00:00,  1.16it/s]Shuffled vision: 100%|██████████| 30/30 [00:26<00:00,  1.18it/s]                                                                  → Avg NLL loss: 0.4485
+
+============================================================
+Condition: No bottleneck
+  bottleneck=OFF, image=no_bottleneck
+------------------------------------------------------------
+No bottleneck:   0%|          | 0/30 [00:00<?, ?it/s]No bottleneck:   3%|▎         | 1/30 [00:00<00:22,  1.28it/s]No bottleneck:   7%|▋         | 2/30 [00:01<00:23,  1.22it/s]No bottleneck:  10%|█         | 3/30 [00:02<00:21,  1.24it/s]No bottleneck:  13%|█▎        | 4/30 [00:03<00:21,  1.20it/s]No bottleneck:  17%|█▋        | 5/30 [00:04<00:21,  1.18it/s]No bottleneck:  20%|██        | 6/30 [00:04<00:20,  1.20it/s]No bottleneck:  23%|██▎       | 7/30 [00:05<00:19,  1.21it/s]No bottleneck:  27%|██▋       | 8/30 [00:06<00:17,  1.23it/s]No bottleneck:  30%|███       | 9/30 [00:07<00:16,  1.26it/s]No bottleneck:  33%|███▎      | 10/30 [00:08<00:15,  1.32it/s]No bottleneck:  37%|███▋      | 11/30 [00:08<00:14,  1.28it/s]No bottleneck:  40%|████      | 12/30 [00:09<00:14,  1.28it/s]No bottleneck:  43%|████▎     | 13/30 [00:10<00:13,  1.23it/s]No bottleneck:  47%|████▋     | 14/30 [00:11<00:13,  1.21it/s]No bottleneck:  50%|█████     | 15/30 [00:12<00:12,  1.20it/s]No bottleneck:  53%|█████▎    | 16/30 [00:13<00:11,  1.19it/s]No bottleneck:  57%|█████▋    | 17/30 [00:13<00:10,  1.20it/s]No bottleneck:  60%|██████    | 18/30 [00:14<00:09,  1.25it/s]No bottleneck:  63%|██████▎   | 19/30 [00:15<00:09,  1.21it/s]No bottleneck:  67%|██████▋   | 20/30 [00:16<00:08,  1.23it/s]No bottleneck:  70%|███████   | 21/30 [00:17<00:07,  1.24it/s]No bottleneck:  73%|███████▎  | 22/30 [00:17<00:06,  1.25it/s]No bottleneck:  77%|███████▋  | 23/30 [00:18<00:05,  1.27it/s]No bottleneck:  80%|████████  | 24/30 [00:19<00:04,  1.26it/s]No bottleneck:  83%|████████▎ | 25/30 [00:20<00:04,  1.22it/s]No bottleneck:  87%|████████▋ | 26/30 [00:21<00:03,  1.19it/s]No bottleneck:  90%|█████████ | 27/30 [00:21<00:02,  1.21it/s]No bottleneck:  93%|█████████▎| 28/30 [00:22<00:01,  1.23it/s]No bottleneck:  97%|█████████▋| 29/30 [00:23<00:00,  1.26it/s]No bottleneck: 100%|██████████| 30/30 [00:24<00:00,  1.28it/s]                                                                → Avg NLL loss: 0.4498
+
+============================================================
+SANITY CHECK RESULTS
+============================================================
+Condition                    Avg NLL
+-------------------------------------
+Normal (bn ON)                0.4485
+Blank vision                  0.4481
+Shuffled vision               0.4485
+No bottleneck                 0.4498
+
+-------------------------------------
+Deltas vs Normal:
+  Blank    - Normal = -0.0003
+  Shuffled - Normal = +0.0000
+  No BN    - Normal = +0.0014
+
+Interpretation:
+  ⚠️  Blank ≈ Normal → vision may not be used (bad)
+  ⚠️  Shuffled ≈ Normal → model ignores image content (bad)
+  ✅ No BN ≈ Normal → latent tokens carry info well (good)
+
+Note: With an untrained model, Blank/Shuffled deltas may be small.
+Re-run after training for definitive results.

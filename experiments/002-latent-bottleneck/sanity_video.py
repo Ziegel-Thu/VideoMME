@@ -24,8 +24,8 @@ from mvp import (
 from train_video import VideoQADataset, collate_fn_video
 
 
-def run_sanity_video(checkpoint_path, data_path, num_frames=4, max_samples=20):
-    model, processor, tokenizer, latent_token_ids = setup_model_and_tokenizer(K=8)
+def run_sanity_video(checkpoint_path, data_path, num_frames=4, max_samples=20, K=8):
+    model, processor, tokenizer, latent_token_ids = setup_model_and_tokenizer(K=K)
     latent_tokens = [f"<latent_{i}>" for i in range(8)]
     device = next(model.parameters()).device
 
@@ -133,7 +133,8 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint", required=True)
     parser.add_argument("--data_path", default="/home/v-shuzheng/video/data/parsed/visual_qa_v2.jsonl")
     parser.add_argument("--num_frames", type=int, default=4)
+    parser.add_argument("--K", type=int, default=8)
     parser.add_argument("--max_samples", type=int, default=20)
     args = parser.parse_args()
-    passed = run_sanity_video(args.checkpoint, args.data_path, args.num_frames, args.max_samples)
+    passed = run_sanity_video(args.checkpoint, args.data_path, args.num_frames, args.max_samples, args.K)
     sys.exit(0 if passed else 1)

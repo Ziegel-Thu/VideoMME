@@ -179,3 +179,22 @@ Epoch 1 完成后自动跑 sanity check（tmux: auto-sanity）。
 3. **数据量关键** — 7.7K 不够，19K 纯 MCQ 才 pass
 4. **Epoch 数关键** — multi-frame 下 1 epoch 不够，5 epoch 才 pass
 5. **K=8 够用** — 即使 1482:8 的压缩比，5 epoch 后也能 pass
+
+### K sweep 结果 (1K × 5ep, N=4帧, LIVR mask)
+
+| K | 压缩比 (vision:latent) | val_loss (best) | BN Zero Δ | 结果 |
+|---|------------------------|-----------------|-----------|------|
+| 8 | 185:1 | 0.2085 | +0.16 | ✅ PASS |
+| 32 | 46:1 | (丢失) | — | 需重跑 |
+| 64 | 23:1 | 0.2165 | +0.77 | ✅ PASS |
+
+**结论**: K 越大 bottleneck 效果越强。K=8 也能 pass 但 Δ 较小。
+选择 K=32 做全量训练（压缩比接近单帧 K=8 的成功配置，速度适中）。
+
+### 当前全量训练
+
+| 配置 | 状态 |
+|------|------|
+| K=32, N=4帧, 19K MCQ, LIVR mask, 3 epochs | 🔄 启动中 |
+| 预计时间 | ~42h |
+| 完成后 | sanity → temporal head |
