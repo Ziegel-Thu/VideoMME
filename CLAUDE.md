@@ -35,7 +35,13 @@
 - [ ] 明确写出 loss 公式，每个 loss 对应什么数据
 - [ ] 确认每个 loss 项都有非零梯度（不会因为标签全 None 导致某个 loss 永远为 0）
 
-**D. Overfit + Sanity**
+**D. 代码溯源检查**
+- [ ] 当前代码参考了哪篇论文的写法？
+- [ ] 是完全照搬还是有改动？改动了什么？
+- [ ] 改动的原因是什么？是必须的吗？
+- [ ] 原论文的关键细节（如 pos_weight、正负样本处理、reward 设计）是否被遗漏？
+
+**E. Overfit + Sanity**
 - [ ] overfit 1 batch 验证 loss 能降
 - [ ] 第 1 epoch 后跑 sanity check，不要等全部 epoch
 
