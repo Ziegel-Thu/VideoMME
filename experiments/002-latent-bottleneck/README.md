@@ -198,3 +198,19 @@ Epoch 1 完成后自动跑 sanity check（tmux: auto-sanity）。
 | K=32, N=4帧, 19K MCQ, LIVR mask, 3 epochs | 🔄 启动中 |
 | 预计时间 | ~42h |
 | 完成后 | sanity → temporal head |
+
+### Temporal Head 评测结果 (K=32, N=4帧, 19K MCQ + temporal)
+
+| 指标 | 值 |
+|------|-----|
+| 平均 tIoU | 0.3148 |
+| Recall@0.3 | 44.5% (89/200) |
+| Recall@0.5 | 27.0% (54/200) |
+| Recall@0.7 | 12.0% (24/200) |
+
+训练配置: L = L_ans + 0.5 * L_temp, 3 epochs
+Bottleneck: LIVR mask (eager attention)
+val_loss: 0.2459 → 0.1137 → 0.0895 (持续下降)
+
+**结论**: Latent token 的 hidden state 能预测时间段（baseline tIoU=0.31）。
+后续优化方向: 增加帧数 / 更多 temporal 训练数据 / 调 temporal_weight
