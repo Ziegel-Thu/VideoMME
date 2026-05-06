@@ -1,0 +1,17 @@
+description: Hello World 测试 - 验证 bottleneck 项目可用
+
+target:
+  service: sing
+  name: msrresrchbasicvc
+  workspace_name: msraairwsws
+
+environment:
+  image: amlt-sing/2.5.0-cuda12.4-cudnn9-devel
+
+jobs:
+  - name: hello
+    sku: G1
+    command:
+      - echo "Hello from bottleneck project!"
+      - nvidia-smi
+      - python -c "import torch; print('PyTorch', torch.__version__, 'CUDA available:', torch.cuda.is_available())"

@@ -1,0 +1,51 @@
+description: "Bottleneck SFT Stage 2 多卡训练 (4×A100, K=32, 8帧)"
+
+target:
+  service: sing
+  name: msrresrchbasicvc
+  workspace_name: msraairwsws
+
+environment:
+  image: amlt-sing/2.5.0-cuda12.4-cudnn9-devel
+  setup:
+    - pip install transformers==4.57.6 peft accelerate qwen-vl-utils decord pillow
+
+storage:
+  data:
+    storage_account_name: shuwangmain
+    container_name: zhengshurui
+    mount_dir: /mnt/data
+
+code:
+  local_dir: .
+
+jobs:
+  - name: stage2-k32-8f
+    sku: G4
+    sla: Standard
+    command:
+      - >-
+        torchrun --nproc_per_node=4 train_ddp.py
+        --data_path /mnt/data/video_project/data/parsed/visual_qa_v2.jsonl
+        --video_dirs /mnt/data/video_project/data/videos/stgr,/mnt/data/video_project/data/videos/llava-video
+        --output_dir $$AMLT_OUTPUT_DIR
+        --K 32 --num_frames 8 --epochs 10 --lr 2e-5
+        --bottleneck --gradient_checkpointing
+        --grad_accum 2
+        --resume_from /mnt/data/video_project/checkpoints/k32_full/outputs_k32_full/best_model.pt
+        2>&1 | tee $$AMLT_OUTPUT_DIR/train_log.txt
+
+  - name: stage2-k32-16f
+    sku: G4
+    sla: Standard
+    command:
+      - >-
+        torchrun --nproc_per_node=4 train_ddp.py
+        --data_path /mnt/data/video_project/data/parsed/visual_qa_v2.jsonl
+        --video_dirs /mnt/data/video_project/data/videos/stgr,/mnt/data/video_project/data/videos/llava-video
+        --output_dir $$AMLT_OUTPUT_DIR
+        --K 32 --num_frames 16 --epochs 10 --lr 2e-5
+        --bottleneck --gradient_checkpointing
+        --grad_accum 2
+        --resume_from /mnt/data/video_project/checkpoints/k32_full/outputs_k32_full/best_model.pt
+        2>&1 | tee $$AMLT_OUTPUT_DIR/train_log.txt
