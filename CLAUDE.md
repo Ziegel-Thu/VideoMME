@@ -121,8 +121,16 @@ Stage 4: 长视频 VoCo 压缩 + Segment Selector
 - **实验 README.md**：记录当前配置、已知问题、结果
 - **commit message**：说清楚改了什么、为什么改
 - 不要等到被问"有在记录吗"才去更新
+- **CLAUDE.md 自查**：每次 commit 时重温 CLAUDE.md，检查是否遵守了实验纪律
 
-### 7. 操作红线
+### 7. amlt 提交检查
+- [ ] amlt.yaml 中的 blob 路径存在（`amlt storage list` 验证）
+- [ ] SKU 指定了具体加速器型号（如 `80G8-A100-NvLink`，不能用模糊的 `G8`）
+- [ ] `code.local_dir` 指向干净目录，配合 `.amltignore` 排除无关文件
+- [ ] `setup` 中的 pip install 版本号明确
+- [ ] 提交前用 `amlt run --dump` 检查解析结果
+
+### 8. 操作红线
 - **不自作主张 kill 正在跑的进程**——先问用户
 - **push 由用户手动执行**
 - **不自作主张删数据或 checkpoint**——先问用户
@@ -138,9 +146,10 @@ video/
 │   └── {名称}/                  # 每篇论文独立目录，含 .tex/.bib/figures
 ├── scripts/                     # 可复用工具脚本
 │   ├── download_paper.sh        # arXiv 论文 LaTeX 下载工具
-│   └── parse_training_data.py   # 数据解析脚本
+│   └── parse_mcq_data.py        # MCQ 数据解析脚本（LLaVA-Video-178K + STGR）
 ├── experiments/                 # 实验代码（按编号组织）
-│   └── {NNN}-{英文短名}/        # 每个实验独立目录
+│   ├── 002-latent-bottleneck/   # 单卡 Stage 2 实验（已完成）
+│   └── 003-bottleneck-multigpu/ # 多卡 DDP Stage 2（当前）
 ├── data/                        # 训练数据和视频（gitignore）
 └── plan.md                      # 研究计划（session state 里）
 ```
