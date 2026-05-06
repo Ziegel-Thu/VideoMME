@@ -10,32 +10,66 @@
 
 ## ⚠️ 实验纪律（必须遵守）
 
-### 1. 先验证再扩大，每一步都要 sanity check
-- **写完代码先 overfit 1 batch**：loss 降不到 0 就不要往下走
-- **第一个 epoch 完成后立刻跑 sanity check**：不要等全部 epoch 跑完
-- **sanity check 必须包含**：blank vision / shuffled vision / 正常对照
-- 如果 blank ≈ normal → 模型没在用视觉信息，**立刻停训查原因**
+### 0. 时刻清楚项目目标和当前阶段
+- **项目目标**：用 latent visual bottleneck 做 grounded long video reasoning
+  - 输入：长视频 + 问题 → 输出：答案 + 证据时间段
+  - 方法：latent tokens + bottleneck mask + VoCo 压缩 + Temporal Head
+  - Claim：bottleneck 迫使 latent 承载视觉信息，单次前向做 grounding
+- **训练路线**：Stage 1 VoCo(可跳) → Stage 2 Bottleneck SFT(MCQ) → Stage 3 Temporal Head(temporal data)
+- **启动任何实验前，先确认"当前在哪个 Stage，用什么数据，训什么参数"**
 
-### 2. 不要从零写，要基于参考实现改
+### 1. 训练前必检清单（每次启动训练前逐条确认）
+
+**A. 数据检查**
+- [ ] 打印数据总量
+- [ ] 需要的标签字段存在吗？（如 L_temp 需要 evidence_segments 不全是 None）
+- [ ] 数据是否匹配任务？（L_temp 需要 temporal 标签，L_ans 需要 answer）
+- [ ] 打印 3 条完整样本，人工确认格式正确
+
+**B. 模型检查**
+- [ ] 哪些参数在训练？哪些冻住了？打印 trainable params
+- [ ] 如果加载 checkpoint，验证加载成功（跑 1 step 看 loss 是否合理）
+- [ ] mask 是否生效？（用 attention weight 验证）
+
+**C. Loss 检查**
+- [ ] 明确写出 loss 公式，每个 loss 对应什么数据
+- [ ] 确认每个 loss 项都有非零梯度（不会因为标签全 None 导致某个 loss 永远为 0）
+
+**D. Overfit + Sanity**
+- [ ] overfit 1 batch 验证 loss 能降
+- [ ] 第 1 epoch 后跑 sanity check，不要等全部 epoch
+
+### 2. tmux 启动命令检查
+- [ ] 命令中的路径存在（checkpoint、数据文件、output_dir）
+- [ ] 参数完整（K、num_frames、mask_mode、lr、epochs 等都显式指定）
+- [ ] 日志 tee 到文件（`2>&1 | tee log_xxx.txt`）
+- [ ] 确认 GPU 显存足够（`nvidia-smi` 检查）
+- [ ] 不会和正在跑的进程冲突
+
+### 3. 不要从零写，要基于参考实现改
 - 先读参考论文的代码（VoCo-LLaMA、LIVR、LVR 等），理解它们怎么实现的
 - 在已有框架上改，不要自己拼 —— 减少 bug 概率
 - 每次写新模块前，先用 rubber-duck agent review 设计
 
-### 3. 理解了再动手
+### 4. 理解了再动手
 - 新模块写之前，先能口头解释清楚"这个模块做什么、输入输出是什么、为什么这样设计"
 - 不确定导师方案某句话的含义时，**停下来问用户**，不要自己猜着往前冲
-- 导师说"或 MCQ CE"这种退化选项，要理解它在什么条件下适用
 
-### 4. 数据必须匹配任务
+### 5. 数据必须匹配任务
 - 训练 bottleneck 时，数据必须**视觉依赖**——不看图答不对题
-- temporal QA（答案是时间段）不适合验证 bottleneck，因为靠语言 prior 就能猜
-- MCQ / 图片描述 / visual QA 才适合
+- 训练 temporal head 时，数据必须有 **temporal 标注**
+- 每次换数据前确认标签字段非空
 
-### 5. 文档实时更新
+### 6. 文档实时更新
 - **plan.md**：每做完一个 phase / 发现重要问题 / 方向修正时，立即更新
 - **实验 README.md**：记录当前配置、已知问题、结果
 - **commit message**：说清楚改了什么、为什么改
 - 不要等到被问"有在记录吗"才去更新
+
+### 7. 操作红线
+- **不自作主张 kill 正在跑的进程**——先问用户
+- **push 由用户手动执行**
+- **不自作主张删数据或 checkpoint**——先问用户
 
 ---
 
