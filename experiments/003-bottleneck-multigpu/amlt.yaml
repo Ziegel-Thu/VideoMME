@@ -1,4 +1,4 @@
-description: "Bottleneck SFT Stage 2 多卡训练 (8×A100, K=48, 12帧)"
+description: "Bottleneck SFT Stage 2 (8×A100, K=48, 12帧, 0-30s短视频)"
 
 target:
   service: sing
@@ -10,12 +10,6 @@ environment:
   setup:
     - pip install transformers==4.57.6 peft accelerate qwen-vl-utils decord pillow
 
-storage:
-  data:
-    storage_account_name: shuwangmain
-    container_name: zhengshurui
-    mount_dir: /mnt/data
-
 code:
   local_dir: .
 
@@ -26,8 +20,8 @@ jobs:
     command:
       - >-
         torchrun --nproc_per_node=8 train_ddp.py
-        --data_path /mnt/data/video_project/data/parsed/visual_qa_v3_train.jsonl
-        --video_dirs /mnt/data/video_project/data/videos/stgr,/mnt/data/video_project/data/videos/llava-video
+        --data_path /mnt/default/bottleneck/data/visual_qa_v3_short_train.jsonl
+        --video_dirs /mnt/default/bottleneck/data/videos/0_30_s_academic_v0_1
         --output_dir $$AMLT_OUTPUT_DIR
         --K 48 --num_frames 12 --epochs 10 --lr 2e-5
         --bottleneck --gradient_checkpointing
