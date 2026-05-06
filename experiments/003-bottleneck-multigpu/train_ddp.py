@@ -6,7 +6,7 @@ Stage 2: Bottleneck SFT 多卡 DDP 训练
   python train_ddp.py --data_path ... --video_dirs ... --output_dir ... --bottleneck
 
   # 多卡 (torchrun)
-  torchrun --nproc_per_node=4 train_ddp.py --data_path ... --video_dirs ... --output_dir ... --bottleneck
+  torchrun --nproc_per_node=8 train_ddp.py --data_path ... --video_dirs ... --output_dir ... --bottleneck
 
   # amlt 集群
   amlt run amlt.yaml
@@ -18,7 +18,6 @@ import argparse
 from contextlib import nullcontext
 
 import torch
-import torch.nn.functional as F
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader, random_split, Subset
@@ -33,7 +32,7 @@ from model import (
     load_checkpoint,
     get_language_model_layers,
 )
-from data import VideoQADataset, collate_fn, TemporalHead
+from data import VideoQADataset, collate_fn
 
 
 # ============================================================
@@ -102,54 +101,6 @@ def split_dataset(dataset, n_val=500, n_test=500, seed=42):
     )
     log(f"数据划分: train={n_train}, val={n_val}, test={n_test}")
     return train_set, val_set, test_set
-
-
-# ============================================================
-# Hidden state 捕获 hook（替代 output_hidden_states=True，省显存）
-# ============================================================
-
-class HiddenStateCapture:
-    """在最后一层 decoder 后捕获 hidden states，只保留 latent 位置。
-
-    用法:
-        cap = HiddenStateCapture(layers[-1], latent_token_ids)
-        cap.install()
-        outputs = model(**batch)
-        latent_hidden = cap.get(batch["input_ids"])  # (B, K, D)
-        cap.remove()
-    """
-
-    def __init__(self, last_layer, latent_token_ids):
-        self.latent_set = set(latent_token_ids)
-        self.last_layer = last_layer
-        self._hidden = None
-        self._hook = None
-
-    def install(self):
-        def hook_fn(module, input, output):
-            # output[0] 是 hidden_states (B, L, D)
-            self._hidden = output[0]
-        self._hook = self.last_layer.register_forward_hook(hook_fn)
-
-    def get(self, input_ids):
-        """提取 latent token 位置的 hidden states，返回 (B, K, D)。"""
-        if self._hidden is None:
-            return None
-        results = []
-        for b in range(input_ids.shape[0]):
-            ids = input_ids[b].tolist()
-            lat_pos = [i for i, t in enumerate(ids) if t in self.latent_set]
-            if lat_pos:
-                results.append(self._hidden[b, lat_pos, :])
-        if not results:
-            return None
-        return torch.stack(results)  # (B, K, D)
-
-    def remove(self):
-        if self._hook is not None:
-            self._hook.remove()
-            self._hook = None
-        self._hidden = None
 
 
 # ============================================================
@@ -239,20 +190,8 @@ def train(args):
         shuffle=False, collate_fn=collate,
     )
 
-    # --- Temporal Head（可选）---
-    temporal_head = None
-    if args.temporal_head:
-        temporal_head = TemporalHead(3584, num_bins=args.num_frames).to(device)
-        if world_size > 1:
-            temporal_head = DDP(temporal_head, device_ids=[local_rank],
-                                find_unused_parameters=False)
-        th_raw = temporal_head.module if hasattr(temporal_head, "module") else temporal_head
-        log(f"Temporal Head: {sum(p.numel() for p in th_raw.parameters())} params")
-
     # --- Optimizer ---
     params = [p for p in model.parameters() if p.requires_grad]
-    if temporal_head:
-        params += [p for p in temporal_head.parameters() if p.requires_grad]
     optimizer = torch.optim.AdamW(params, lr=args.lr, weight_decay=0.01)
 
     # LLM layers（用于挂 hook）
@@ -263,8 +202,6 @@ def train(args):
     # --- 训练循环 ---
     for epoch in range(start_epoch, start_epoch + args.epochs):
         model.train()
-        if temporal_head:
-            temporal_head.train()
         if train_sampler:
             train_sampler.set_epoch(epoch)
 
@@ -276,7 +213,7 @@ def train(args):
                     disable=not is_main())
 
         for step, batch in enumerate(pbar):
-            t_labels = batch.pop("_temporal_labels")
+            batch.pop("_temporal_labels", None)
             batch = {k: v.to(device) if isinstance(v, torch.Tensor) else v
                      for k, v in batch.items()}
 
@@ -289,7 +226,6 @@ def train(args):
 
             # Bottleneck hooks + forward + backward（try/finally 防泄漏）
             hooks = []
-            hidden_cap = None
             try:
                 if args.bottleneck:
                     bn_mask = build_bottleneck_mask(
@@ -298,30 +234,14 @@ def train(args):
                     ).to(device, dtype=torch.bfloat16)
                     hooks = install_bottleneck_hooks(layers, bn_mask)
 
-                # 用 hook 捕获最后层 hidden state（temporal head 用）
-                if temporal_head:
-                    hidden_cap = HiddenStateCapture(layers[-1], latent_token_ids)
-                    hidden_cap.install()
-
                 with sync_ctx:
                     outputs = model(**batch)
                     loss = outputs.loss / args.grad_accum
-
-                    # Temporal loss
-                    if temporal_head and hidden_cap:
-                        loss_temp = _compute_temporal_loss(
-                            hidden_cap, batch["input_ids"],
-                            temporal_head, t_labels, device,
-                        )
-                        loss = loss + args.temporal_weight * loss_temp / args.grad_accum
-
                     loss.backward()
 
             finally:
                 for h in hooks:
                     h.remove()
-                if hidden_cap:
-                    hidden_cap.remove()
 
             # 梯度累积完成 → 更新参数
             if is_sync_step:
@@ -363,14 +283,6 @@ def train(args):
                     os.path.join(args.output_dir, "best_model.pt"),
                     epoch=epoch + 1, val_loss=val_loss,
                 )
-                if temporal_head:
-                    th = (temporal_head.module
-                          if hasattr(temporal_head, "module")
-                          else temporal_head)
-                    torch.save(
-                        th.state_dict(),
-                        os.path.join(args.output_dir, "temporal_head.pt"),
-                    )
                 log(f"  ★ New best (val_loss={val_loss:.4f})")
 
         # 同步 best_val
@@ -392,7 +304,7 @@ def validate(model, val_loader, layers, latent_token_ids, args, device,
     count = 0
 
     for batch in val_loader:
-        batch.pop("_temporal_labels")
+        batch.pop("_temporal_labels", None)
         batch = {k: v.to(device) if isinstance(v, torch.Tensor) else v
                  for k, v in batch.items()}
 
@@ -421,21 +333,6 @@ def validate(model, val_loader, layers, latent_token_ids, args, device,
     return loss_sum / max(count, 1)
 
 
-def _compute_temporal_loss(hidden_cap, input_ids, temporal_head,
-                           t_labels, device):
-    """计算 temporal head 的 BCE loss。"""
-    latent_hidden = hidden_cap.get(input_ids)  # (B, K, D) or None
-
-    if latent_hidden is None or t_labels[0] is None:
-        # 没有 temporal label 时，构造 dummy loss 使参数留在计算图
-        th = temporal_head.module if hasattr(temporal_head, "module") else temporal_head
-        return 0.0 * sum(p.sum() for p in th.parameters())
-
-    logits = temporal_head(latent_hidden)  # (B, num_bins)
-    target = torch.tensor([t_labels[0]], dtype=torch.float, device=device)
-    return F.binary_cross_entropy_with_logits(logits, target)
-
-
 # ============================================================
 # 入口
 # ============================================================
@@ -458,11 +355,11 @@ if __name__ == "__main__":
                         help="测试集大小上限")
 
     # 模型
-    parser.add_argument("--K", type=int, default=32,
+    parser.add_argument("--K", type=int, default=48,
                         help="latent token 数量")
     parser.add_argument("--lora_r", type=int, default=16,
                         help="LoRA rank")
-    parser.add_argument("--num_frames", type=int, default=8,
+    parser.add_argument("--num_frames", type=int, default=12,
                         help="每视频采样帧数")
 
     # 训练
@@ -478,12 +375,6 @@ if __name__ == "__main__":
                         help="启用梯度检查点（节省显存，允许更多帧）")
     parser.add_argument("--overfit", action="store_true",
                         help="Overfit 模式（调试用）")
-
-    # Temporal Head
-    parser.add_argument("--temporal_head", action="store_true",
-                        help="启用 temporal head")
-    parser.add_argument("--temporal_weight", type=float, default=0.5,
-                        help="temporal loss 权重")
 
     # 恢复训练
     parser.add_argument("--resume_from", default=None,

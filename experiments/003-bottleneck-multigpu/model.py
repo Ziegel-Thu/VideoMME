@@ -55,6 +55,9 @@ def setup_model_and_tokenizer(
         attn_implementation="eager",
     ).to(device)
 
+    # 训练时关闭 KV cache（gradient checkpointing 要求）
+    model.config.use_cache = False
+
     processor = AutoProcessor.from_pretrained(model_name)
     tokenizer = processor.tokenizer
 

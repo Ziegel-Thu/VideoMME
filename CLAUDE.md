@@ -4,7 +4,56 @@
 
 本项目研究视频理解与多模态大模型评测，核心方向：在 VLM 中加 latent visual bottleneck 做 grounded video reasoning。
 
-硬件环境：A100 80GB 单卡。
+硬件环境：A100 80GB，集群可用多卡（4×A100）。
+
+---
+
+## 导师方案全景
+
+### 核心思想
+
+输入：长视频 V + 问题 Q → 输出：答案 +（可选）关键证据时间段 [t_s, t_e]
+
+把长视频压成少量 **Segment Latent Visual Tokens**（段级 latent），再进一步抽取少量 **Event Latent Tokens**（事件 latent）来回答问题；训练时用 **bottleneck attention** 强迫答案依赖 latent token，从而更 grounded。
+
+### 三层表示（从长到短）
+
+1. **Segment tokens**（段级 latent）：把视频切分成 2s/4s 段，每段用少量 latent token 表示（如每段 2-4 个 token）。借鉴 VoCo-LLaMA 的注意力蒸馏学"如何压缩且不丢信息"。
+2. **Segment Selector / Temporal Gater**：从所有段选 top-m 个与问题最相关的段（m=8/16）。吸收 Video-o3 的选段轨迹监督。
+3. **Event Latent Tokens**（K 个 slots）：对选出的 top-m 段做 cross-attention，得到固定 K 个 event latent tokens。然后用 Temporal Head 从中解码时间段。
+
+### LIVR-style Bottleneck Attention Mask
+
+训练时修改 attention mask：答案 tokens 不能直接 attend 到原始 dense visual tokens，只能 attend 到 latent tokens。模型想答对就必须把必要视觉信息压进 latent tokens。
+
+### 训练流程
+
+```
+Stage 1: Segment latent token 压缩 (VoCo-style，可跳过)
+Stage 2: Bottleneck SFT — MCQ 数据训 L_ans  ← 当前阶段
+Stage 3: Temporal Head — temporal 数据训 L_temp
+Stage 4: 长视频 VoCo 压缩 + Segment Selector
+```
+
+最终 loss: L = L_ans + λ_temp × L_temp + λ_sel × L_sel
+
+### 关键设计决策
+
+- **不需要预先压缩**：bottleneck mask 本身就在训练压缩能力。L_ans 梯度信号隐式教模型学会压缩。VoCo 的价值在于计算压缩（减少 token 数量），是后续工程优化。
+- **当前做法 B（MVP）**：不加压缩模块，K 个 latent tokens 直接 attend 所有 dense vision tokens，通过 bottleneck mask 隐式学压缩。帧数受限于显存（N=8~16）。
+- **未来做法 A**：加 cross-attention 压缩层，显式把每段 dense tokens 压成 4 个 segment tokens，可端到端训练。
+
+### 必做 Ablation（验证 latent tokens 有效性）
+
+- **(A) Bottleneck On/Off**：On 应提升 grounding，说明 latent 承载了证据信息
+- **(B) K 扩展曲线**：K=0/4/8/16/32，K 增大 grounding 单调改善 → token capacity 有效
+- **(C) Evidence segment replacement**：因果检验，替换为随机段后退化 → 模型确实依赖证据
+
+### 数据来源
+
+- **Open-o3-Video**：时间证据监督（Q + A + 关键时间段 [t_s, t_e]）
+- **Video-o3 Seeker-173K**：选段轨迹监督（Segment Selector 正样本）
+- **MCQ 数据**：visual_qa_v2.jsonl（19K 条，Stage 2 用）
 
 ---
 
@@ -16,6 +65,7 @@
   - 方法：latent tokens + bottleneck mask + VoCo 压缩 + Temporal Head
   - Claim：bottleneck 迫使 latent 承载视觉信息，单次前向做 grounding
 - **训练路线**：Stage 1 VoCo(可跳) → Stage 2 Bottleneck SFT(MCQ) → Stage 3 Temporal Head(temporal data)
+- **当前阶段**：Stage 2 多卡训练（003-bottleneck-multigpu，4×A100，N=8~16帧）
 - **启动任何实验前，先确认"当前在哪个 Stage，用什么数据，训什么参数"**
 
 ### 1. 训练前必检清单（每次启动训练前逐条确认）
