@@ -255,6 +255,15 @@ def train(args):
             if is_main():
                 pbar.set_postfix(loss=f"{loss.item() * args.grad_accum:.4f}")
 
+            # Step-level checkpoint（防抢占丢失进度）
+            if args.save_steps > 0 and n_steps % args.save_steps == 0 and is_main():
+                save_checkpoint(
+                    model, latent_token_ids,
+                    os.path.join(args.output_dir, "latest_step.pt"),
+                    epoch=epoch + 1, val_loss=-1, step=n_steps,
+                )
+                log(f"  Step checkpoint @ step {n_steps}")
+
         # 处理末尾不完整的累积步
         if n_steps % args.grad_accum != 0:
             torch.nn.utils.clip_grad_norm_(params, 1.0)
@@ -375,6 +384,8 @@ if __name__ == "__main__":
                         help="启用梯度检查点（节省显存，允许更多帧）")
     parser.add_argument("--overfit", action="store_true",
                         help="Overfit 模式（调试用）")
+    parser.add_argument("--save_steps", type=int, default=100,
+                        help="每 N 步保存一次 checkpoint（防抢占）")
 
     # 恢复训练
     parser.add_argument("--resume_from", default=None,

@@ -206,7 +206,7 @@ def build_bottleneck_mask(input_ids, latent_token_ids, enable_bottleneck=True):
     return mask
 
 
-def save_checkpoint(model, latent_token_ids, path, epoch=None, val_loss=None):
+def save_checkpoint(model, latent_token_ids, path, epoch=None, val_loss=None, step=None):
     """保存 LoRA 权重 + latent embeddings（自动 unwrap DDP）。"""
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
 
@@ -228,6 +228,8 @@ def save_checkpoint(model, latent_token_ids, path, epoch=None, val_loss=None):
         ckpt["epoch"] = epoch
     if val_loss is not None:
         ckpt["val_loss"] = val_loss
+    if step is not None:
+        ckpt["step"] = step
 
     torch.save(ckpt, path)
     print(f"  Checkpoint → {path}")
