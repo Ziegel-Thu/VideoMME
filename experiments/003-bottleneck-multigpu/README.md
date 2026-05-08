@@ -84,18 +84,34 @@ best_val_loss = 0.1831。代码跑通，DDP + gradient checkpointing 工作正�
 
 ### 集群正在跑的实验 (110K, 0-60s)
 
-| 实验 | BN | Cosine | 配置 | SLA | 状态 |
-|------|-----|--------|------|-----|------|
-| stage2-60s | ✅ | ❌ | 4×A100 K=48 N=12 | Standard | **running** |
-| stage2-no-bn-fair | ❌ | ❌ | 4×A100 K=48 N=12 | Standard | preparing |
-| stage2-60s-cosine | ✅ | ✅ | 4×A100 K=48 N=12 | Basic | queued |
-| stage2-no-bn-cos | ❌ | ✅ | 4×A100 K=48 N=12 | Basic | preparing |
-| stage2-60s-n4 | ✅ | ❌ | 4×A100 K=32 N=4 | Standard | preparing |
+最后更新: 2026-05-08 18:00
+
+| 实验 | BN | Cosine | 配置 | SLA | 进度 | 速度 |
+|------|-----|--------|------|-----|------|------|
+| stage2-60s | ✅ | ❌ | 4×A100 K=48 N=12 | Standard | Ep1 18% (4840/27132) | ~7s/步 |
+| stage2-no-bn-fair | ❌ | ❌ | 4×A100 K=48 N=12 | Standard | Ep1 17% (4599/27132) | ~6s/步 |
+| stage2-60s-n4 | ✅ | ❌ | 4×A100 K=32 N=4 | Standard | Ep1 **71%** (19137/27132) | ~1.3s/步 |
+| stage2-60s-cosine | ✅ | ✅ | 4×A100 K=48 N=12 | Basic | Ep1 11% (3020/27132) | ~9s/步 |
+| stage2-no-bn-cos | ❌ | ✅ | 4×A100 K=48 N=12 | Basic | Ep1 9% (2436/27132) | ~7s/步 |
+
+### 本地正在跑的实验
+
+| 实验 | BN | 配置 | 进度 | 说明 |
+|------|-----|------|------|------|
+| no-BN 20K | ❌ | 1×A100 K=32 N=4 | Ep1 3% (551/18500) | BN on/off 对比 baseline |
+
+### 004 蒸馏实验
+
+| 实验 | 配置 | 状态 | 说明 |
+|------|------|------|------|
+| distill-0-30s | tpf=8 N=4 全量 | ❌ import 失败，需重提 | data.py 路径问题已修复 |
+| 本地 debug | tpf=8 N=4 20条 | ✅ 通过 loss 3.61→1.85 | compressor 在学 |
 
 Ablation 设计:
-- **(A) BN On/Off**: stage2-60s vs stage2-no-bn-fair
+- **(A) BN On/Off**: stage2-60s vs stage2-no-bn-fair（+ 本地 20K 对比）
 - **(B) Cosine LR**: stage2-60s vs stage2-60s-cosine
 - **(C) N=4 vs N=12**: stage2-60s-n4 vs stage2-60s
+- **(D) tokens_per_frame**: 004 蒸馏后 4/8/16 对比
 
 ---
 
