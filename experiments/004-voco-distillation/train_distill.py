@@ -191,7 +191,11 @@ def build_compressed_inputs(
 
     # 获取 dense video embeddings
     m = model.module if hasattr(model, "module") else model
-    base_model = m.base_model.model if hasattr(m, "base_model") else m
+    # 兼容 PEFT 和非 PEFT 模型
+    if hasattr(m, "base_model"):
+        inner_model = m.base_model.model.model  # PEFT wrapped
+    else:
+        inner_model = m.model  # 原始 Qwen2_5_VLForConditionalGeneration
 
     pixel_values_videos = teacher_inputs.get("pixel_values_videos")
     video_grid_thw = teacher_inputs.get("video_grid_thw")
@@ -203,7 +207,7 @@ def build_compressed_inputs(
     vg = video_grid_thw.to(device)
 
     with torch.no_grad():
-        video_embeds_list = base_model.model.get_video_features(pv, vg)
+        video_embeds_list = inner_model.get_video_features(pv, vg)
         video_embeds = torch.cat(video_embeds_list, dim=0)  # (total_tokens, D)
 
     # 每帧 token 数量（从 video_grid_thw 推算）
@@ -240,7 +244,7 @@ def build_compressed_inputs(
     new_input_ids = torch.tensor([new_ids], device=device)
 
     # 构造 inputs_embeds
-    embed_layer = base_model.model.get_input_embeddings()
+    embed_layer = inner_model.get_input_embeddings()
     text_embeds = embed_layer(new_input_ids)  # (1, new_L, D)
 
     # 用 compressed tokens 替换 video_pad 位置
@@ -415,13 +419,14 @@ def train(args):
                 # Student forward（compressor 需要梯度）
                 s_batch = {k: v.to(device) if isinstance(v, torch.Tensor) else v
                            for k, v in student_inputs.items()}
-                # 绕过 visual scatter：直接用 inputs_embeds
-                student_out = model.model(
+                # 绕过 visual scatter：直接用 inputs_embeds，通过内部 LLM
+                m_inner = model.module if hasattr(model, "module") else model
+                student_out = m_inner.model(
                     inputs_embeds=s_batch["inputs_embeds"],
                     attention_mask=s_batch.get("attention_mask"),
                 )
                 student_hidden = student_out[0]
-                student_logits = model.lm_head(student_hidden)
+                student_logits = m_inner.lm_head(student_hidden)
 
                 # KL divergence 在 answer 位置
                 # 需要对齐 teacher/student 的 answer token 位置
