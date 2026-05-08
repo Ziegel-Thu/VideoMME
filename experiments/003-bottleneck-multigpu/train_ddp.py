@@ -194,6 +194,18 @@ def train(args):
     params = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.AdamW(params, lr=args.lr, weight_decay=0.01)
 
+    # Cosine LR scheduler（warmup 前 3% 步数，之后 cosine 衰减到 0）
+    total_steps = len(train_loader) * args.epochs // args.grad_accum
+    warmup_steps = max(int(total_steps * 0.03), 10)
+    scheduler = None
+    if args.cosine_lr:
+        from torch.optim.lr_scheduler import CosineAnnealingLR, SequentialLR, LinearLR
+        warmup = LinearLR(optimizer, start_factor=0.1, total_iters=warmup_steps)
+        cosine = CosineAnnealingLR(optimizer, T_max=total_steps - warmup_steps)
+        scheduler = SequentialLR(optimizer, [warmup, cosine],
+                                 milestones=[warmup_steps])
+        log(f"  Cosine LR: {total_steps} 总步, {warmup_steps} warmup 步")
+
     # LLM layers（用于挂 hook）
     layers = get_language_model_layers(model)
     os.makedirs(args.output_dir, exist_ok=True)
@@ -247,6 +259,8 @@ def train(args):
             if is_sync_step:
                 torch.nn.utils.clip_grad_norm_(params, 1.0)
                 optimizer.step()
+                if scheduler:
+                    scheduler.step()
                 optimizer.zero_grad()
 
             total_loss += loss.item() * args.grad_accum
@@ -386,6 +400,8 @@ if __name__ == "__main__":
                         help="Overfit 模式（调试用）")
     parser.add_argument("--save_steps", type=int, default=100,
                         help="每 N 步保存一次 checkpoint（防抢占）")
+    parser.add_argument("--cosine_lr", action="store_true",
+                        help="使用 cosine LR scheduler（warmup + decay）")
 
     # 恢复训练
     parser.add_argument("--resume_from", default=None,
