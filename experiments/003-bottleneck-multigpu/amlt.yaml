@@ -1,4 +1,4 @@
-description: "Bottleneck SFT Stage 2 (4×A100, K=48, 12帧, 2K数据验证)"
+description: "Bottleneck SFT Stage 2 (4×A100, K=48, 12帧, 0-60s, 110K数据)"
 
 target:
   service: sing
@@ -14,16 +14,15 @@ code:
   local_dir: $CONFIG_DIR
 
 jobs:
-  - name: stage2-k48-12f-2k
+  - name: stage2-k48-12f-60s
     sku: 80G4-A100-NvLink
     command:
       - >-
         torchrun --nproc_per_node=4 train_ddp.py
-        --data_path /mnt/default/bottleneck/data/visual_qa_v3_short_train.jsonl
-        --video_dirs /mnt/default/bottleneck/data/videos/0_30_s_academic_v0_1
+        --data_path /mnt/default/bottleneck/data/visual_qa_v3_60s_train.jsonl
+        --video_dirs /mnt/default/bottleneck/data/videos/0_30_s_academic_v0_1,/mnt/default/bottleneck/data/videos/30_60_s_academic_v0_1
         --output_dir $$AMLT_OUTPUT_DIR
-        --K 48 --num_frames 12 --epochs 3 --lr 2e-5
+        --K 48 --num_frames 12 --epochs 5 --lr 2e-5
         --bottleneck --gradient_checkpointing
-        --grad_accum 2 --max_samples 2000
-        --save_steps 100
+        --grad_accum 4 --save_steps 500
         2>&1 | tee $$AMLT_OUTPUT_DIR/train_log.txt
