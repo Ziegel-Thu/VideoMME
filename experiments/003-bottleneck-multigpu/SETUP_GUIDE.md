@@ -68,9 +68,46 @@ find data/llava-video/0_30_s_academic_v0_1/ -name "*.mp4" | wc -l
 # 预期：约 12,000 个
 ```
 
-### 3.2 生成标注 jsonl
+### 3.2 下载标注 JSON
 
-解析脚本会自动从 HuggingFace 下载 MCQ 标注 JSON，然后解析、去重、按视频级别划分 train/val/test。
+解析脚本需要 LLaVA-Video-178K 的 MCQ 标注文件。先下载到 `data/llava-video-annotations/`：
+
+```bash
+# 下载所有 MCQ 标注 JSON（~几十 MB）
+huggingface-cli download lmms-lab/LLaVA-Video-178K \
+  --repo-type dataset \
+  --include "0_30_s_academic_v0_1/*mc*qa_processed.json" \
+            "0_30_s_nextqa/*mc*qa_processed.json" \
+            "0_30_s_perceptiontest/*mc*qa_processed.json" \
+            "0_30_s_youtube_v0_1/*mc*qa_processed.json" \
+            "30_60_s_academic_v0_1/*mc*qa_processed.json" \
+            "30_60_s_nextqa/*mc*qa_processed.json" \
+            "30_60_s_perceptiontest/*mc*qa_processed.json" \
+            "30_60_s_youtube_v0_1/*mc*qa_processed.json" \
+            "1_2_m_academic_v0_1/*mc*qa_processed.json" \
+            "1_2_m_nextqa/*mc*qa_processed.json" \
+            "1_2_m_youtube_v0_1/*mc*qa_processed.json" \
+            "2_3_m_academic_v0_1/*mc*qa_processed.json" \
+            "2_3_m_nextqa/*mc*qa_processed.json" \
+            "2_3_m_youtube_v0_1/*mc*qa_processed.json" \
+  --local-dir data/llava-video-annotations/
+```
+
+确认下载成功：
+```bash
+find data/llava-video-annotations/ -name "*.json" | wc -l
+# 预期：14 个文件
+```
+
+如果也需要 Open-o3-Video STGR 数据（可选）：
+```bash
+# STGR-SFT.json 需要放到 data/open-o3-video/json_data/
+# STGR 视频需要放到 data/open-o3-video/videos/stgr/
+```
+
+### 3.3 生成标注 jsonl
+
+解析脚本从已下载的标注 JSON 中提取 MCQ 数据：
 
 ```bash
 python scripts/parse_mcq_data.py
@@ -81,7 +118,7 @@ python scripts/parse_mcq_data.py
 - `data/parsed/visual_qa_v3_val.jsonl` — 验证集（~7.5K 条）
 - `data/parsed/visual_qa_v3_test.jsonl` — 测试集（~15K 条）
 
-### 3.3 过滤出 0-30s 短视频子集
+### 3.4 过滤出 0-30s 短视频子集
 
 全量数据包含 0s-3min 的视频，我们先只用 0-30s 的：
 
