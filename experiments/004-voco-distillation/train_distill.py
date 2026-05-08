@@ -35,6 +35,9 @@ from torch.utils.data import DataLoader, random_split, Subset
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
 
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__),
+                                "../003-bottleneck-multigpu"))
 from data import VideoQADataset, extract_frames
 
 # Qwen2.5-VL special token IDs

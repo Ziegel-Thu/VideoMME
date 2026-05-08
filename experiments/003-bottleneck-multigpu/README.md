@@ -8,8 +8,8 @@
 ### 训练路线全景
 
 ```
-Stage 1: VoCo Attention Distillation（压缩 dense → segment tokens）  ← 后续
-Stage 2: Bottleneck SFT（MCQ 数据训 L_ans）                          ← 当前
+Stage 1: VoCo Attention Distillation（004-voco-distillation）       ← 独立实验，测试中
+Stage 2: Bottleneck SFT（MCQ 数据训 L_ans）                          ← 集群训练中
 Stage 3: Temporal Head（temporal 数据训 L_temp）                      ← 代码已写好
 Stage 4: 长视频 VoCo 压缩 + Segment Selector                        ← 后续
 ```
@@ -39,8 +39,9 @@ Stage 4: 长视频 VoCo 压缩 + Segment Selector                        ← 后
 ├── SETUP_GUIDE.md         # 外部机器部署指南
 ├── model.py               # 模型加载、mask 构造、checkpoint 工具
 ├── data.py                # Dataset、collate_fn
-├── train_ddp.py           # Stage 2: DDP 训练主脚本
+├── train_ddp.py           # Stage 2: Bottleneck SFT 训练
 ├── train_temporal.py      # Stage 3: Temporal Head 训练
+├── train_distill.py       # Stage 1: VoCo-style 蒸馏训练
 ├── sanity_check.py        # Bottleneck 有效性验证
 ├── eval_mcq.py            # MCQ 准确率评测
 ├── amlt.yaml              # 集群提交配置
