@@ -185,6 +185,19 @@ def build_compressed_inputs(
         except OSError:
             pass
 
+    # --- 给 teacher 构造 answer-only labels ---
+    t_input_ids = teacher_inputs["input_ids"][0]
+    t_labels = torch.full_like(t_input_ids, -100)
+    t_ids_list = t_input_ids.tolist()
+    im_start_id = tokenizer.convert_tokens_to_ids("<|im_start|>")
+    im_starts = [i for i, t in enumerate(t_ids_list) if t == im_start_id]
+    if im_starts:
+        ast = im_starts[-1]
+        assistant_prefix = tokenizer.encode("assistant\n", add_special_tokens=False)
+        content_start = ast + 1 + len(assistant_prefix)
+        t_labels[content_start:] = t_input_ids[content_start:]
+    teacher_inputs["labels"] = t_labels.unsqueeze(0)
+
     # --- 构造 student inputs ---
     device = next(model.parameters()).device
     dtype = next(model.parameters()).dtype
@@ -192,7 +205,8 @@ def build_compressed_inputs(
     # 获取 dense video embeddings
     m = model.module if hasattr(model, "module") else model
     # 兼容 PEFT 和非 PEFT 模型
-    if hasattr(m, "base_model"):
+    from peft import PeftModel
+    if isinstance(m, PeftModel):
         inner_model = m.base_model.model.model  # PEFT wrapped
     else:
         inner_model = m.model  # 原始 Qwen2_5_VLForConditionalGeneration

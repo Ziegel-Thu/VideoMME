@@ -1,0 +1,603 @@
+`torch_dtype` is deprecated! Use `dtype` instead!
+============================================================
+VoCo-style Distillation 训练
+  tokens_per_frame: 8
+  num_frames: 4
+  压缩比: ~370 → 8 (46:1)
+============================================================
+Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 5/5 [00:00<00:00, 56.55it/s]
+The image processor of type `Qwen2VLImageProcessor` is now loaded as a fast processor by default, even if the model checkpoint was saved with a slow processor. This is a breaking change and may produce slightly different outputs. To continue using the slow processor, instantiate this class with `use_fast=False`. Note that this behavior will be extended to all models in a future release.
+Compressor params: 102,835,712
+数据集: 200 条可用, 0 条跳过 (视频索引: 6135 个)
+数据: train=180, val=20
+Epoch 1:   0%|          | 0/180 [00:00<?, ?it/s]Epoch 1:   1%|          | 1/180 [00:00<00:19,  8.98it/s]Epoch 1:   1%|          | 2/180 [00:00<00:22,  7.91it/s]Epoch 1:   2%|▏         | 3/180 [00:00<00:34,  5.11it/s]Epoch 1:   2%|▏         | 4/180 [00:00<00:29,  5.95it/s]Epoch 1:   3%|▎         | 5/180 [00:00<00:27,  6.46it/s]Epoch 1:   4%|▍         | 7/180 [00:00<00:18,  9.37it/s]Epoch 1:   5%|▌         | 9/180 [00:01<00:15, 11.14it/s]Epoch 1:   6%|▌         | 11/180 [00:01<00:15, 11.21it/s]Epoch 1:   7%|▋         | 13/180 [00:01<00:14, 11.63it/s]Epoch 1:   8%|▊         | 15/180 [00:01<00:13, 12.69it/s]Epoch 1:   9%|▉         | 17/180 [00:01<00:12, 13.11it/s]Epoch 1:  11%|█         | 19/180 [00:01<00:12, 13.33it/s]Epoch 1:  12%|█▏        | 21/180 [00:01<00:11, 13.79it/s]Epoch 1:  13%|█▎        | 23/180 [00:02<00:10, 14.81it/s]Epoch 1:  14%|█▍        | 25/180 [00:02<00:10, 14.83it/s]Epoch 1:  15%|█▌        | 27/180 [00:02<00:12, 11.96it/s]Epoch 1:  16%|█▌        | 29/180 [00:02<00:15,  9.59it/s]Epoch 1:  17%|█▋        | 31/180 [00:03<00:17,  8.44it/s]Epoch 1:  18%|█▊        | 32/180 [00:03<00:20,  7.27it/s]Epoch 1:  18%|█▊        | 33/180 [00:03<00:20,  7.27it/s]Epoch 1:  19%|█▉        | 34/180 [00:03<00:21,  6.83it/s]Epoch 1:  19%|█▉        | 35/180 [00:03<00:24,  5.80it/s]Epoch 1:  20%|██        | 36/180 [00:03<00:24,  5.88it/s]Epoch 1:  21%|██        | 37/180 [00:04<00:23,  5.98it/s]Epoch 1:  21%|██        | 38/180 [00:04<00:24,  5.78it/s]Epoch 1:  22%|██▏       | 39/180 [00:04<00:23,  6.04it/s]Epoch 1:  22%|██▏       | 40/180 [00:04<00:21,  6.38it/s]Epoch 1:  23%|██▎       | 41/180 [00:04<00:22,  6.07it/s]Epoch 1:  23%|██▎       | 42/180 [00:04<00:21,  6.30it/s]Epoch 1:  24%|██▍       | 43/180 [00:05<00:26,  5.13it/s]Epoch 1:  24%|██▍       | 44/180 [00:05<00:24,  5.50it/s]Epoch 1:  25%|██▌       | 45/180 [00:05<00:22,  5.94it/s]Epoch 1:  26%|██▌       | 46/180 [00:05<00:21,  6.17it/s]Epoch 1:  26%|██▌       | 47/180 [00:05<00:21,  6.11it/s]Epoch 1:  27%|██▋       | 48/180 [00:06<00:27,  4.79it/s]Epoch 1:  27%|██▋       | 49/180 [00:06<00:30,  4.34it/s]Epoch 1:  28%|██▊       | 50/180 [00:06<00:32,  3.96it/s]Epoch 1:  28%|██▊       | 51/180 [00:06<00:27,  4.66it/s]Epoch 1:  29%|██▉       | 52/180 [00:06<00:24,  5.31it/s]Epoch 1:  29%|██▉       | 53/180 [00:07<00:21,  5.94it/s]Epoch 1:  30%|███       | 54/180 [00:07<00:23,  5.33it/s]Epoch 1:  31%|███       | 55/180 [00:07<00:20,  6.12it/s]Epoch 1:  31%|███       | 56/180 [00:07<00:22,  5.47it/s]Epoch 1:  32%|███▏      | 57/180 [00:07<00:19,  6.30it/s]Epoch 1:  32%|███▏      | 58/180 [00:07<00:20,  6.06it/s]Epoch 1:  33%|███▎      | 60/180 [00:08<00:19,  6.24it/s]Epoch 1:  34%|███▍      | 61/180 [00:08<00:17,  6.65it/s]Epoch 1:  34%|███▍      | 62/180 [00:08<00:16,  7.16it/s]Epoch 1:  35%|███▌      | 63/180 [00:08<00:15,  7.69it/s]Epoch 1:  36%|███▌      | 65/180 [00:08<00:12,  9.08it/s]Epoch 1:  37%|███▋      | 67/180 [00:08<00:11,  9.82it/s]Epoch 1:  38%|███▊      | 69/180 [00:09<00:11,  9.49it/s]Epoch 1:  39%|███▉      | 70/180 [00:09<00:12,  8.76it/s]Epoch 1:  39%|███▉      | 71/180 [00:09<00:14,  7.34it/s]Epoch 1:  40%|████      | 72/180 [00:09<00:17,  6.15it/s]Epoch 1:  41%|████      | 73/180 [00:09<00:18,  5.94it/s]Epoch 1:  41%|████      | 74/180 [00:10<00:16,  6.34it/s]Epoch 1:  42%|████▏     | 75/180 [00:10<00:14,  7.03it/s]Epoch 1:  43%|████▎     | 77/180 [00:10<00:12,  8.47it/s]Epoch 1:  44%|████▍     | 79/180 [00:10<00:10,  9.22it/s]Epoch 1:  45%|████▌     | 81/180 [00:10<00:10,  9.64it/s]Epoch 1:  46%|████▌     | 82/180 [00:10<00:10,  9.63it/s]Epoch 1:  47%|████▋     | 84/180 [00:11<00:11,  8.38it/s]Epoch 1:  47%|████▋     | 85/180 [00:11<00:10,  8.64it/s]  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:42:24] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:42:24] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:42:27] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:42:27] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:42:30] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:42:30] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:42:32] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:42:32] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:42:33] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:42:33] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:42:34] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:42:34] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:42:35] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:42:35] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'Epoch 1:  48%|████▊     | 87/180 [00:11<00:10,  8.79it/s]Epoch 1:  49%|████▉     | 88/180 [00:11<00:10,  8.71it/s]Epoch 1:  49%|████▉     | 89/180 [00:11<00:13,  6.82it/s]Epoch 1:  50%|█████     | 90/180 [00:11<00:12,  7.08it/s]Epoch 1:  51%|█████     | 92/180 [00:12<00:11,  7.95it/s]Epoch 1:  52%|█████▏    | 93/180 [00:12<00:11,  7.68it/s]Epoch 1:  52%|█████▏    | 94/180 [00:12<00:11,  7.24it/s]Epoch 1:  53%|█████▎    | 95/180 [00:12<00:10,  7.78it/s]Epoch 1:  53%|█████▎    | 96/180 [00:12<00:11,  7.51it/s]Epoch 1:  54%|█████▍    | 97/180 [00:12<00:12,  6.86it/s]Epoch 1:  55%|█████▌    | 99/180 [00:13<00:12,  6.56it/s]Epoch 1:  56%|█████▌    | 100/180 [00:13<00:11,  7.02it/s]Epoch 1:  56%|█████▌    | 101/180 [00:13<00:11,  7.04it/s]Epoch 1:  57%|█████▋    | 102/180 [00:13<00:10,  7.37it/s]Epoch 1:  57%|█████▋    | 103/180 [00:13<00:10,  7.65it/s]Epoch 1:  58%|█████▊    | 104/180 [00:13<00:10,  7.00it/s]Epoch 1:  58%|█████▊    | 105/180 [00:14<00:10,  6.91it/s]Epoch 1:  59%|█████▉    | 106/180 [00:14<00:12,  5.79it/s]Epoch 1:  59%|█████▉    | 107/180 [00:14<00:11,  6.52it/s]Epoch 1:  60%|██████    | 108/180 [00:14<00:09,  7.23it/s]Epoch 1:  61%|██████    | 109/180 [00:14<00:09,  7.62it/s]Epoch 1:  61%|██████    | 110/180 [00:14<00:10,  6.55it/s]Epoch 1:  62%|██████▏   | 111/180 [00:15<00:12,  5.69it/s]Epoch 1:  62%|██████▏   | 112/180 [00:15<00:13,  5.17it/s]Epoch 1:  63%|██████▎   | 113/180 [00:15<00:11,  5.99it/s]Epoch 1:  63%|██████▎   | 114/180 [00:15<00:09,  6.65it/s]Epoch 1:  64%|██████▍   | 116/180 [00:15<00:07,  8.16it/s]Epoch 1:  65%|██████▌   | 117/180 [00:15<00:08,  7.77it/s]Epoch 1:  66%|██████▌   | 118/180 [00:15<00:08,  7.46it/s]Epoch 1:  66%|██████▌   | 119/180 [00:16<00:07,  7.88it/s]Epoch 1:  67%|██████▋   | 120/180 [00:16<00:08,  7.23it/s]Epoch 1:  68%|██████▊   | 122/180 [00:16<00:06,  8.42it/s]Epoch 1:  68%|██████▊   | 123/180 [00:16<00:06,  8.47it/s]Epoch 1:  69%|██████▉   | 124/180 [00:16<00:09,  6.14it/s]Epoch 1:  69%|██████▉   | 125/180 [00:17<00:09,  5.55it/s]Epoch 1:  71%|███████   | 127/180 [00:17<00:07,  6.87it/s]Epoch 1:  72%|███████▏  | 129/180 [00:17<00:06,  7.76it/s]Epoch 1:  72%|███████▏  | 130/180 [00:17<00:06,  8.01it/s]Epoch 1:  73%|███████▎  | 131/180 [00:17<00:06,  7.72it/s]Epoch 1:  74%|███████▍  | 133/180 [00:17<00:05,  9.03it/s]Epoch 1:  74%|███████▍  | 134/180 [00:17<00:05,  8.95it/s]Epoch 1:  76%|███████▌  | 136/180 [00:18<00:04,  9.96it/s]Epoch 1:  76%|███████▌  | 137/180 [00:18<00:05,  7.74it/s]Epoch 1:  77%|███████▋  | 138/180 [00:18<00:05,  7.97it/s]Epoch 1:  77%|███████▋  | 139/180 [00:18<00:05,  7.84it/s]Epoch 1:  78%|███████▊  | 140/180 [00:18<00:04,  8.03it/s]Epoch 1:  79%|███████▉  | 142/180 [00:18<00:04,  8.98it/s]Epoch 1:  79%|███████▉  | 143/180 [00:19<00:04,  7.89it/s]Epoch 1:  80%|████████  | 144/180 [00:19<00:04,  8.20it/s]Epoch 1:  81%|████████  | 145/180 [00:19<00:04,  8.40it/s]Epoch 1:  82%|████████▏ | 147/180 [00:19<00:03,  8.87it/s]Epoch 1:  83%|████████▎ | 149/180 [00:19<00:03,  9.47it/s]Epoch 1:  84%|████████▍ | 151/180 [00:19<00:03,  9.40it/s]Epoch 1:  85%|████████▌ | 153/180 [00:20<00:02,  9.94it/s]Epoch 1:  86%|████████▌ | 155/180 [00:20<00:02,  9.51it/s]Epoch 1:  87%|████████▋ | 156/180 [00:20<00:02,  9.51it/s]Epoch 1:  88%|████████▊ | 158/180 [00:20<00:02, 10.08it/s]Epoch 1:  89%|████████▉ | 160/180 [00:20<00:02,  9.21it/s]Epoch 1:  89%|████████▉ | 161/180 [00:20<00:02,  9.17it/s]Epoch 1:  90%|█████████ | 162/180 [00:21<00:02,  8.14it/s]Epoch 1:  91%|█████████ | 163/180 [00:21<00:02,  8.16it/s]Epoch 1:  91%|█████████ | 164/180 [00:21<00:02,  6.65it/s]Epoch 1:  92%|█████████▏| 165/180 [00:21<00:02,  6.25it/s]Epoch 1:  93%|█████████▎| 167/180 [00:22<00:02,  6.22it/s]Epoch 1:  93%|█████████▎| 168/180 [00:22<00:02,  5.64it/s]Epoch 1:  94%|█████████▍| 169/180 [00:22<00:01,  5.81it/s]Epoch 1:  94%|█████████▍| 170/180 [00:22<00:01,  6.49it/s]
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:42:37] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:42:37] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:42:39] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:42:39] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:42:39] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:42:39] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:42:40] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:42:40] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:42:43] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:42:43] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:42:46] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:42:46] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:42:46] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:42:46] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'Epoch 1:  96%|█████████▌| 172/180 [00:22<00:01,  7.98it/s]Epoch 1:  96%|█████████▌| 173/180 [00:22<00:00,  8.12it/s]Epoch 1:  97%|█████████▋| 175/180 [00:23<00:00,  7.66it/s]Epoch 1:  98%|█████████▊| 176/180 [00:23<00:00,  7.94it/s]Epoch 1:  98%|█████████▊| 177/180 [00:23<00:00,  8.10it/s]Epoch 1:  99%|█████████▉| 179/180 [00:23<00:00,  9.30it/s]Epoch 1: 100%|██████████| 180/180 [00:23<00:00,  8.26it/s]Epoch 1: 100%|██████████| 180/180 [00:23<00:00,  7.61it/s]
+
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  Epoch 1: train_loss=0.0000
+  ★ New best (loss=0.0000)
+Epoch 2:   0%|          | 0/180 [00:00<?, ?it/s]Epoch 2:   1%|          | 2/180 [00:00<00:19,  9.12it/s]Epoch 2:   2%|▏         | 4/180 [00:00<00:19,  8.85it/s]Epoch 2:   3%|▎         | 6/180 [00:00<00:17,  9.74it/s]Epoch 2:   4%|▍         | 7/180 [00:00<00:18,  9.44it/s]Epoch 2:   5%|▌         | 9/180 [00:01<00:21,  7.87it/s]Epoch 2:   6%|▌         | 10/180 [00:01<00:20,  8.13it/s]Epoch 2:   6%|▌         | 11/180 [00:01<00:20,  8.37it/s]Epoch 2:   7%|▋         | 12/180 [00:01<00:19,  8.47it/s]Epoch 2:   7%|▋         | 13/180 [00:01<00:19,  8.37it/s]Epoch 2:   8%|▊         | 15/180 [00:01<00:17,  9.37it/s]Epoch 2:   9%|▉         | 17/180 [00:01<00:17,  9.34it/s]Epoch 2:  10%|█         | 18/180 [00:02<00:17,  9.46it/s]Epoch 2:  11%|█         | 20/180 [00:02<00:20,  7.99it/s]Epoch 2:  12%|█▏        | 22/180 [00:02<00:18,  8.44it/s]Epoch 2:  13%|█▎        | 23/180 [00:02<00:19,  8.25it/s]Epoch 2:  14%|█▍        | 25/180 [00:02<00:17,  8.66it/s]Epoch 2:  14%|█▍        | 26/180 [00:03<00:18,  8.38it/s]Epoch 2:  15%|█▌        | 27/180 [00:03<00:18,  8.49it/s]Epoch 2:  16%|█▌        | 28/180 [00:03<00:18,  8.00it/s]Epoch 2:  16%|█▌        | 29/180 [00:03<00:19,  7.74it/s]Epoch 2:  17%|█▋        | 30/180 [00:03<00:19,  7.72it/s]Epoch 2:  18%|█▊        | 32/180 [00:03<00:20,  7.25it/s]Epoch 2:  18%|█▊        | 33/180 [00:03<00:19,  7.59it/s]Epoch 2:  19%|█▉        | 34/180 [00:04<00:18,  7.93it/s]Epoch 2:  19%|█▉        | 35/180 [00:04<00:17,  8.28it/s]Epoch 2:  20%|██        | 36/180 [00:04<00:21,  6.85it/s]Epoch 2:  21%|██        | 38/180 [00:04<00:16,  8.40it/s]Epoch 2:  22%|██▏       | 40/180 [00:04<00:15,  8.86it/s]Epoch 2:  23%|██▎       | 42/180 [00:05<00:18,  7.30it/s]Epoch 2:  24%|██▍       | 43/180 [00:05<00:18,  7.51it/s]Epoch 2:  24%|██▍       | 44/180 [00:05<00:21,  6.37it/s]Epoch 2:  26%|██▌       | 46/180 [00:05<00:18,  7.17it/s]Epoch 2:  26%|██▌       | 47/180 [00:05<00:17,  7.62it/s]Epoch 2:  27%|██▋       | 48/180 [00:06<00:20,  6.52it/s]Epoch 2:  27%|██▋       | 49/180 [00:06<00:18,  7.12it/s]Epoch 2:  28%|██▊       | 50/180 [00:06<00:18,  7.03it/s]Epoch 2:  29%|██▉       | 52/180 [00:06<00:19,  6.73it/s]Epoch 2:  29%|██▉       | 53/180 [00:06<00:17,  7.09it/s]Epoch 2:  30%|███       | 54/180 [00:06<00:21,  5.94it/s]Epoch 2:  31%|███       | 56/180 [00:07<00:16,  7.50it/s]Epoch 2:  32%|███▏      | 57/180 [00:07<00:16,  7.31it/s]Epoch 2:  32%|███▏      | 58/180 [00:07<00:15,  7.80it/s]Epoch 2:  33%|███▎      | 60/180 [00:07<00:13,  9.01it/s]Epoch 2:  34%|███▍      | 61/180 [00:07<00:13,  8.69it/s]Epoch 2:  35%|███▌      | 63/180 [00:07<00:12,  9.45it/s]Epoch 2:  36%|███▌      | 64/180 [00:07<00:12,  9.51it/s]Epoch 2:  37%|███▋      | 66/180 [00:08<00:13,  8.37it/s]Epoch 2:  37%|███▋      | 67/180 [00:08<00:13,  8.62it/s]Epoch 2:  38%|███▊      | 68/180 [00:08<00:13,  8.42it/s]Epoch 2:  39%|███▉      | 70/180 [00:08<00:12,  8.62it/s]Epoch 2:  39%|███▉      | 71/180 [00:08<00:13,  8.01it/s]Epoch 2:  40%|████      | 72/180 [00:09<00:14,  7.63it/s]Epoch 2:  41%|████      | 73/180 [00:09<00:14,  7.41it/s]Epoch 2:  41%|████      | 74/180 [00:09<00:18,  5.88it/s]Epoch 2:  42%|████▏     | 75/180 [00:09<00:17,  6.04it/s]Epoch 2:  42%|████▏     | 76/180 [00:09<00:16,  6.45it/s]Epoch 2:  43%|████▎     | 77/180 [00:09<00:15,  6.48it/s]Epoch 2:  43%|████▎     | 78/180 [00:09<00:15,  6.77it/s]Epoch 2:  44%|████▍     | 79/180 [00:10<00:15,  6.68it/s]Epoch 2:  45%|████▌     | 81/180 [00:10<00:12,  8.07it/s]Epoch 2:  46%|████▌     | 83/180 [00:10<00:12,  7.77it/s]  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:42:49] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:42:49] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:42:50] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:42:50] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:42:52] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:42:52] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:42:53] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:42:53] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:42:54] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:42:54] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:42:56] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:42:56] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:42:58] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:42:58] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:42:58] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:42:58] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代Epoch 2:  47%|████▋     | 84/180 [00:10<00:14,  6.75it/s]Epoch 2:  47%|████▋     | 85/180 [00:10<00:13,  7.30it/s]Epoch 2:  48%|████▊     | 87/180 [00:11<00:11,  7.89it/s]Epoch 2:  49%|████▉     | 88/180 [00:11<00:12,  7.55it/s]Epoch 2:  49%|████▉     | 89/180 [00:11<00:12,  7.37it/s]Epoch 2:  50%|█████     | 90/180 [00:11<00:12,  7.08it/s]Epoch 2:  51%|█████     | 91/180 [00:11<00:13,  6.74it/s]Epoch 2:  51%|█████     | 92/180 [00:11<00:13,  6.59it/s]Epoch 2:  52%|█████▏    | 93/180 [00:12<00:13,  6.55it/s]Epoch 2:  52%|█████▏    | 94/180 [00:12<00:12,  7.09it/s]Epoch 2:  53%|█████▎    | 95/180 [00:12<00:11,  7.66it/s]Epoch 2:  54%|█████▍    | 97/180 [00:12<00:08,  9.76it/s]Epoch 2:  54%|█████▍    | 98/180 [00:12<00:09,  8.82it/s]Epoch 2:  55%|█████▌    | 99/180 [00:12<00:11,  7.02it/s]Epoch 2:  56%|█████▌    | 101/180 [00:12<00:09,  8.58it/s]Epoch 2:  57%|█████▋    | 103/180 [00:13<00:08,  9.18it/s]Epoch 2:  58%|█████▊    | 105/180 [00:13<00:08,  8.35it/s]Epoch 2:  59%|█████▉    | 107/180 [00:13<00:10,  7.06it/s]Epoch 2:  60%|██████    | 108/180 [00:13<00:10,  6.84it/s]Epoch 2:  61%|██████    | 109/180 [00:14<00:10,  6.83it/s]Epoch 2:  61%|██████    | 110/180 [00:14<00:10,  6.57it/s]Epoch 2:  62%|██████▏   | 111/180 [00:14<00:10,  6.57it/s]Epoch 2:  62%|██████▏   | 112/180 [00:14<00:11,  5.76it/s]Epoch 2:  63%|██████▎   | 114/180 [00:14<00:08,  7.39it/s]Epoch 2:  64%|██████▍   | 116/180 [00:15<00:07,  8.21it/s]Epoch 2:  66%|██████▌   | 118/180 [00:15<00:06,  9.15it/s]Epoch 2:  66%|██████▌   | 119/180 [00:15<00:08,  7.53it/s]Epoch 2:  67%|██████▋   | 120/180 [00:15<00:08,  6.88it/s]Epoch 2:  67%|██████▋   | 121/180 [00:15<00:09,  6.43it/s]Epoch 2:  68%|██████▊   | 122/180 [00:16<00:09,  6.20it/s]Epoch 2:  68%|██████▊   | 123/180 [00:16<00:08,  6.88it/s]Epoch 2:  69%|██████▉   | 125/180 [00:16<00:07,  7.80it/s]Epoch 2:  70%|███████   | 126/180 [00:16<00:07,  6.87it/s]Epoch 2:  71%|███████   | 127/180 [00:16<00:07,  7.17it/s]Epoch 2:  71%|███████   | 128/180 [00:16<00:06,  7.70it/s]Epoch 2:  72%|███████▏  | 130/180 [00:16<00:05,  9.13it/s]Epoch 2:  73%|███████▎  | 131/180 [00:17<00:05,  9.26it/s]Epoch 2:  74%|███████▍  | 133/180 [00:17<00:04, 10.14it/s]Epoch 2:  75%|███████▌  | 135/180 [00:17<00:05,  8.71it/s]Epoch 2:  76%|███████▌  | 136/180 [00:17<00:05,  7.39it/s]Epoch 2:  76%|███████▌  | 137/180 [00:17<00:05,  7.78it/s]Epoch 2:  77%|███████▋  | 139/180 [00:17<00:04,  8.86it/s]Epoch 2:  78%|███████▊  | 141/180 [00:18<00:04,  9.48it/s]Epoch 2:  79%|███████▉  | 143/180 [00:18<00:03, 10.37it/s]Epoch 2:  81%|████████  | 145/180 [00:18<00:03, 11.32it/s]Epoch 2:  82%|████████▏ | 147/180 [00:18<00:02, 11.96it/s]Epoch 2:  83%|████████▎ | 149/180 [00:18<00:02, 10.82it/s]Epoch 2:  84%|████████▍ | 151/180 [00:19<00:02, 10.15it/s]Epoch 2:  85%|████████▌ | 153/180 [00:19<00:02, 11.40it/s]Epoch 2:  86%|████████▌ | 155/180 [00:19<00:02, 11.06it/s]Epoch 2:  87%|████████▋ | 157/180 [00:19<00:02, 10.05it/s]Epoch 2:  88%|████████▊ | 159/180 [00:19<00:02, 10.14it/s]Epoch 2:  89%|████████▉ | 161/180 [00:19<00:01, 10.73it/s]Epoch 2:  91%|█████████ | 163/180 [00:20<00:01, 12.30it/s]Epoch 2:  92%|█████████▏| 165/180 [00:20<00:01, 13.01it/s]Epoch 2:  93%|█████████▎| 167/180 [00:20<00:01, 11.63it/s]Epoch 2:  94%|█████████▍| 169/180 [00:20<00:01,  8.70it/s]Epoch 2:  95%|█████████▌| 171/180 [00:20<00:00,  9.29it/s]Epoch 2:  96%|█████████▌| 173/180 [00:21<00:00, 10.53it/s]Epoch 2:  97%|█████████▋| 175/180 [00:21<00:00, 11.31it/s]
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:43:01] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:43:01] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:43:01] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:43:01] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:43:03] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:43:03] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:43:04] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:43:04] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:43:07] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:43:07] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:43:07] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:43:07] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'Epoch 2:  98%|█████████▊| 177/180 [00:21<00:00, 12.30it/s]Epoch 2:  99%|█████████▉| 179/180 [00:21<00:00, 13.07it/s]Epoch 2: 100%|██████████| 180/180 [00:21<00:00,  8.34it/s]
+
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  Epoch 2: train_loss=0.0000
+Epoch 3:   0%|          | 0/180 [00:00<?, ?it/s]Epoch 3:   1%|          | 1/180 [00:00<00:30,  5.97it/s]Epoch 3:   2%|▏         | 3/180 [00:00<00:17, 10.39it/s]Epoch 3:   3%|▎         | 5/180 [00:00<00:14, 11.78it/s]Epoch 3:   4%|▍         | 7/180 [00:00<00:17,  9.89it/s]Epoch 3:   5%|▌         | 9/180 [00:00<00:15, 11.16it/s]Epoch 3:   6%|▌         | 11/180 [00:01<00:15, 10.76it/s]Epoch 3:   7%|▋         | 13/180 [00:01<00:14, 11.35it/s]Epoch 3:   8%|▊         | 15/180 [00:01<00:13, 12.17it/s]Epoch 3:   9%|▉         | 17/180 [00:01<00:14, 11.29it/s]Epoch 3:  11%|█         | 19/180 [00:01<00:15, 10.36it/s]Epoch 3:  12%|█▏        | 21/180 [00:01<00:13, 11.44it/s]Epoch 3:  13%|█▎        | 23/180 [00:02<00:12, 12.58it/s]Epoch 3:  14%|█▍        | 25/180 [00:02<00:11, 13.41it/s]Epoch 3:  15%|█▌        | 27/180 [00:02<00:11, 13.40it/s]Epoch 3:  16%|█▌        | 29/180 [00:02<00:10, 13.90it/s]Epoch 3:  17%|█▋        | 31/180 [00:02<00:12, 12.22it/s]Epoch 3:  18%|█▊        | 33/180 [00:02<00:12, 11.57it/s]Epoch 3:  19%|█▉        | 35/180 [00:03<00:13, 10.44it/s]Epoch 3:  21%|██        | 37/180 [00:03<00:12, 11.19it/s]Epoch 3:  22%|██▏       | 39/180 [00:03<00:15,  9.37it/s]Epoch 3:  23%|██▎       | 41/180 [00:09<02:21,  1.02s/it]Epoch 3:  24%|██▍       | 43/180 [00:10<01:41,  1.34it/s]Epoch 3:  24%|██▍       | 44/180 [00:10<01:26,  1.56it/s]Epoch 3:  26%|██▌       | 46/180 [00:10<01:00,  2.22it/s]Epoch 3:  27%|██▋       | 48/180 [00:10<00:43,  3.04it/s]Epoch 3:  28%|██▊       | 50/180 [00:10<00:32,  3.95it/s]Epoch 3:  29%|██▉       | 52/180 [00:10<00:26,  4.86it/s]Epoch 3:  30%|███       | 54/180 [00:10<00:20,  6.29it/s]Epoch 3:  31%|███       | 56/180 [00:11<00:16,  7.53it/s]Epoch 3:  32%|███▏      | 58/180 [00:11<00:15,  8.13it/s]Epoch 3:  33%|███▎      | 60/180 [00:11<00:13,  9.13it/s]Epoch 3:  34%|███▍      | 62/180 [00:11<00:11, 10.26it/s]Epoch 3:  36%|███▌      | 64/180 [00:11<00:10, 11.16it/s]Epoch 3:  37%|███▋      | 66/180 [00:11<00:09, 11.70it/s]Epoch 3:  38%|███▊      | 68/180 [00:12<00:09, 12.31it/s]Epoch 3:  39%|███▉      | 70/180 [00:12<00:08, 12.44it/s]Epoch 3:  40%|████      | 72/180 [00:12<00:08, 12.80it/s]Epoch 3:  41%|████      | 74/180 [00:12<00:08, 13.09it/s]Epoch 3:  42%|████▏     | 76/180 [00:12<00:07, 13.63it/s]Epoch 3:  43%|████▎     | 78/180 [00:12<00:08, 11.56it/s]Epoch 3:  44%|████▍     | 80/180 [00:13<00:09, 10.91it/s]Epoch 3:  46%|████▌     | 82/180 [00:13<00:08, 11.91it/s]Epoch 3:  47%|████▋     | 84/180 [00:13<00:08, 11.46it/s]  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:43:10] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:43:10] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:43:10] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:43:10] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:43:11] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:43:11] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:43:12] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:43:12] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:43:13] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:43:13] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:43:19] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:43:19] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:43:22] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:43:22] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'Epoch 3:  48%|████▊     | 86/180 [00:13<00:07, 12.19it/s]Epoch 3:  49%|████▉     | 88/180 [00:13<00:07, 11.88it/s]Epoch 3:  50%|█████     | 90/180 [00:13<00:08, 11.06it/s]Epoch 3:  51%|█████     | 92/180 [00:14<00:08, 10.59it/s]Epoch 3:  52%|█████▏    | 94/180 [00:14<00:07, 11.79it/s]Epoch 3:  53%|█████▎    | 96/180 [00:14<00:06, 12.09it/s]Epoch 3:  54%|█████▍    | 98/180 [00:14<00:06, 12.84it/s]Epoch 3:  56%|█████▌    | 100/180 [00:14<00:06, 12.89it/s]Epoch 3:  57%|█████▋    | 102/180 [00:14<00:06, 12.99it/s]Epoch 3:  58%|█████▊    | 104/180 [00:15<00:06, 12.57it/s]Epoch 3:  59%|█████▉    | 106/180 [00:15<00:06, 11.14it/s]Epoch 3:  60%|██████    | 108/180 [00:15<00:06, 11.51it/s]Epoch 3:  61%|██████    | 110/180 [00:15<00:06, 10.54it/s]Epoch 3:  62%|██████▏   | 112/180 [00:15<00:06, 11.01it/s]Epoch 3:  63%|██████▎   | 114/180 [00:15<00:05, 11.25it/s]Epoch 3:  64%|██████▍   | 116/180 [00:16<00:05, 11.94it/s]Epoch 3:  66%|██████▌   | 118/180 [00:16<00:05, 10.70it/s]Epoch 3:  67%|██████▋   | 120/180 [00:16<00:05, 11.45it/s]Epoch 3:  68%|██████▊   | 122/180 [00:16<00:04, 12.15it/s]Epoch 3:  69%|██████▉   | 124/180 [00:16<00:04, 11.52it/s]Epoch 3:  70%|███████   | 126/180 [00:16<00:04, 11.13it/s]Epoch 3:  71%|███████   | 128/180 [00:17<00:04, 11.73it/s]Epoch 3:  72%|███████▏  | 130/180 [00:17<00:04, 12.17it/s]Epoch 3:  73%|███████▎  | 132/180 [00:17<00:04, 11.43it/s]Epoch 3:  74%|███████▍  | 134/180 [00:17<00:03, 12.25it/s]Epoch 3:  76%|███████▌  | 136/180 [00:17<00:03, 11.16it/s]Epoch 3:  77%|███████▋  | 138/180 [00:18<00:04, 10.45it/s]Epoch 3:  78%|███████▊  | 140/180 [00:18<00:04,  9.92it/s]Epoch 3:  79%|███████▉  | 142/180 [00:18<00:03, 11.23it/s]Epoch 3:  80%|████████  | 144/180 [00:18<00:03, 11.94it/s]Epoch 3:  81%|████████  | 146/180 [00:18<00:02, 11.37it/s]Epoch 3:  82%|████████▏ | 148/180 [00:18<00:02, 12.27it/s]Epoch 3:  83%|████████▎ | 150/180 [00:19<00:02, 12.68it/s]Epoch 3:  84%|████████▍ | 152/180 [00:19<00:02, 12.54it/s]Epoch 3:  86%|████████▌ | 154/180 [00:19<00:01, 13.11it/s]Epoch 3:  87%|████████▋ | 156/180 [00:19<00:01, 13.99it/s]Epoch 3:  88%|████████▊ | 158/180 [00:19<00:01, 14.64it/s]Epoch 3:  89%|████████▉ | 160/180 [00:19<00:01, 12.22it/s]Epoch 3:  90%|█████████ | 162/180 [00:19<00:01, 12.98it/s]Epoch 3:  91%|█████████ | 164/180 [00:20<00:01, 13.02it/s]Epoch 3:  92%|█████████▏| 166/180 [00:20<00:01, 13.36it/s]Epoch 3:  93%|█████████▎| 168/180 [00:20<00:00, 13.43it/s]Epoch 3:  94%|█████████▍| 170/180 [00:20<00:00, 13.42it/s]Epoch 3:  96%|█████████▌| 172/180 [00:20<00:00, 11.44it/s]Epoch 3:  97%|█████████▋| 174/180 [00:20<00:00, 12.15it/s]Epoch 3:  98%|█████████▊| 176/180 [00:21<00:00,  9.68it/s]Epoch 3:  99%|█████████▉| 178/180 [00:21<00:00,  9.94it/s]
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:43:25] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:43:25] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:43:26] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:43:26] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:43:27] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:43:27] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:43:29] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:43:29] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:43:30] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:43:30] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:43:30] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:43:30] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  ⚠️ 视频读取失败 /home/v-shuzheng/video/data/llava-video/0_30_s_academic_v0_1/academic_source/ego4d/ae3d8548-45f9-4fcf-b528-c457957f9736.mp4: [17:43:31] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:292: [17:43:31] /github/workspace/src/video/ffmpeg/threaded_decoder.cc:218: Check failed: avcodec_send_packet(dec_ctx_.get(), pkt.get()) >= 0 (-11 vs. 0) Thread worker: Error sending packet.，用黑帧替代Epoch 3: 100%|██████████| 180/180 [00:21<00:00,  9.12it/s]Epoch 3: 100%|██████████| 180/180 [00:21<00:00,  8.31it/s]
+
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  [错误] 'Qwen2_5_VLModel' object has no attribute 'model'
+  Epoch 3: train_loss=0.0000
+
+蒸馏完成. best_loss=0.0000
