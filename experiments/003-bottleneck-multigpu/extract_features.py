@@ -187,7 +187,12 @@ def main(args):
                 videos_to_process.add(vname)
 
     videos_list = sorted(videos_to_process)
-    log(f"需要提取: {len(videos_list)} 个视频")
+    log(f"全部需要提取: {len(videos_list)} 个视频")
+
+    # Shard 切分（多个独立 job 时用）
+    if args.n_shards > 1:
+        videos_list = videos_list[args.shard_id::args.n_shards]
+        log(f"Shard {args.shard_id}/{args.n_shards}: {len(videos_list)} 个视频")
 
     # 输出目录
     os.makedirs(args.output_dir, exist_ok=True)
@@ -243,5 +248,9 @@ if __name__ == "__main__":
                         help="采样帧率（每秒几帧）")
     parser.add_argument("--max_frames", type=int, default=60,
                         help="单视频最大帧数上限")
+    parser.add_argument("--shard_id", type=int, default=0,
+                        help="当前 shard ID（多 job 并行时用）")
+    parser.add_argument("--n_shards", type=int, default=1,
+                        help="总 shard 数（多 job 并行时用）")
     args = parser.parse_args()
     main(args)
