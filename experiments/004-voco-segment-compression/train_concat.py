@@ -184,6 +184,7 @@ def voco_concat_collate(batch, voco_model, processor, tokenizer,
     dtype = voco_model.voco_embeds.dtype
 
     import uuid as _uuid, tempfile as _tmpfile
+    import decord
     from qwen_vl_utils import process_vision_info
     from data import extract_frames
 
