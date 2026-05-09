@@ -1,0 +1,28 @@
+description: "VoCo 分段压缩 (单 forward 版本) 4 卡 pilot"
+
+target:
+  service: sing
+  name: msrresrchbasicvc
+  workspace_name: msraairwsws
+
+environment:
+  image: amlt-sing/2.5.0-cuda12.4-cudnn9-devel
+  setup:
+    - pip install transformers==4.57.6 peft accelerate qwen-vl-utils decord pillow
+
+code:
+  local_dir: $CONFIG_DIR
+
+jobs:
+  - name: voco-pilot
+    sku: 80G4-A100-NvLink
+    command:
+      - >-
+        torchrun --nproc_per_node=4 train.py
+        --data_path /mnt/default/bottleneck/data/visual_qa_v3_short_train.jsonl
+        --video_dirs /mnt/default/bottleneck/data/videos/0_30_s_academic_v0_1
+        --output_dir $$AMLT_OUTPUT_DIR
+        --K_seg 4 --frames_per_segment 2 --max_frames 30
+        --epochs 3 --lr 2e-5 --max_samples 5000
+        --gradient_checkpointing
+        2>&1 | tee $$AMLT_OUTPUT_DIR/train_log.txt
