@@ -11,12 +11,10 @@ Collate 输出: 已构造好的 inputs_embeds + attention_mask + labels + layout
 """
 
 import os
-import sys
 import json
 import glob
 import uuid
 import tempfile
-import importlib.util
 
 import torch
 import torch.nn as nn
@@ -24,20 +22,30 @@ from torch.utils.data import Dataset
 from PIL import Image
 import decord
 
-# 显式从 003 加载 extract_frames，避免和本目录的 data.py 名字冲突
-_003_data_path = os.path.join(os.path.dirname(__file__),
-                              "../003-bottleneck-multigpu/data.py")
-_spec = importlib.util.spec_from_file_location("data_003", _003_data_path)
-_data_003 = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_data_003)
-extract_frames = _data_003.extract_frames
-
 from model import (
     get_video_embeds,
     split_into_segments,
     build_voco_sequence_embeds,
     build_voco_attention_mask,
 )
+
+
+def extract_frames(video_path, num_frames):
+    """从视频均匀采样 num_frames 帧。"""
+    try:
+        vr = decord.VideoReader(video_path)
+        total = len(vr)
+        fps = vr.get_avg_fps()
+        indices = [min(int(i * total / num_frames), total - 1)
+                   for i in range(num_frames)]
+        frames = [Image.fromarray(vr[idx].asnumpy()) for idx in indices]
+        timestamps = [idx / fps for idx in indices]
+        duration = total / fps
+        return frames, timestamps, duration
+    except Exception as e:
+        print(f"  ⚠️ 视频读取失败 {video_path}: {e}，用黑帧替代")
+        frames = [Image.new("RGB", (224, 224), (0, 0, 0))] * num_frames
+        return frames, [0.0] * num_frames, 1.0
 
 
 class VoCoVideoDataset(Dataset):
