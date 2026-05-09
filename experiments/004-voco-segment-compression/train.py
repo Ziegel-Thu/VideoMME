@@ -83,7 +83,7 @@ def train(args):
         for p in model.parameters():
             dist.broadcast(p.data, src=0)
         model = DDP(model, device_ids=[local_rank],
-                    find_unused_parameters=False)
+                    find_unused_parameters=True)
 
     # 数据
     video_dirs = args.video_dirs.split(",")
