@@ -45,20 +45,25 @@ def get_inner_model(base):
 def forward_segment(inner, vision_embeds, voco_embeds, position_offset=0):
     """跑一段的 forward: [vision_t, voco_t]，返回 voco 位置的 KV cache。
 
+    优化：vision 部分不保留计算图（detach），只保留 voco 的梯度。
+    这样每段 forward 的显存 = vision forward (无梯度) + voco KV cache (有梯度)。
+
     Args:
         inner: Qwen2_5_VLForConditionalGeneration
         vision_embeds: (V_t, D) 该段 vision tokens
-        voco_embeds: (K, D) 该段 voco tokens
-        position_offset: 段在最终序列中的起始位置（用于 position_ids）
+        voco_embeds: (K, D) 该段 voco tokens（需要梯度）
+        position_offset: 段在最终序列中的起始位置
 
     Returns:
-        voco_cache: list of (K_proj, V_proj) 每层的 voco 部分 KV cache
-        每层 cache shape: (1, n_heads, K, head_dim)
+        voco_cache: list of (K_proj, V_proj) 每层的 voco 部分 KV cache（保留梯度）
     """
-    seg_len = vision_embeds.shape[0] + voco_embeds.shape[0]
     K = voco_embeds.shape[0]
 
-    inputs_embeds = torch.cat([vision_embeds, voco_embeds], dim=0).unsqueeze(0)
+    # Vision 部分不需要梯度（冻结的 vision encoder 输出）
+    vision_detached = vision_embeds.detach()
+
+    inputs_embeds = torch.cat([vision_detached, voco_embeds], dim=0).unsqueeze(0)
+    seg_len = inputs_embeds.shape[1]
     attention_mask = torch.ones(1, seg_len, dtype=torch.long,
                                 device=vision_embeds.device)
     position_ids = torch.arange(
@@ -80,7 +85,8 @@ def forward_segment(inner, vision_embeds, voco_embeds, position_offset=0):
     pkv = out.past_key_values
     n_layers = len(pkv)
     for layer_idx in range(n_layers):
-        k, v = pkv[layer_idx]  # tuple (key, value)
+        k, v = pkv[layer_idx]
+        # 只保留 voco 部分（最后 K 个），vision 部分丢弃
         voco_cache.append((k[:, :, -K:, :], v[:, :, -K:, :]))
 
     return voco_cache
