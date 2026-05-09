@@ -23,7 +23,9 @@ import argparse
 
 import torch
 import torch.nn as nn
+import torch.distributed as dist
 from torch.utils.data import DataLoader, random_split
+from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
 from transformers.cache_utils import DynamicCache
 
@@ -254,14 +256,45 @@ def voco_concat_collate(batch, voco_model, processor, tokenizer,
     }
 
 
+def setup_distributed():
+    if "LOCAL_RANK" in os.environ:
+        local_rank = int(os.environ["LOCAL_RANK"])
+        world_size = int(os.environ["WORLD_SIZE"])
+        dist.init_process_group("nccl")
+        torch.cuda.set_device(local_rank)
+        return local_rank, world_size
+    return 0, 1
+
+
+def cleanup_distributed():
+    if dist.is_initialized():
+        dist.destroy_process_group()
+
+
+def is_main():
+    return not dist.is_initialized() or dist.get_rank() == 0
+
+
+def log(msg):
+    if is_main():
+        print(msg)
+
+
 def train(args):
-    device = torch.device("cuda")
+    local_rank, world_size = setup_distributed()
+    device = torch.device(f"cuda:{local_rank}")
+
+    log("=" * 60)
+    log("004 VoCo 拼接版训练")
+    log(f"  GPU 数量: {world_size}")
+    log(f"  K_seg: {args.K_seg}, frames/seg: {args.frames_per_segment}")
+    log("=" * 60)
 
     model, processor, tokenizer = setup_voco_model(
         K_seg=args.K_seg,
         lora_r=args.lora_r,
         device=device,
-        gradient_checkpointing=args.gradient_checkpointing,
+        gradient_checkpointing=False,  # 拼接版不能用 grad ckpt (和 use_cache 冲突)
     )
 
     video_dirs = args.video_dirs.split(",")
@@ -276,29 +309,38 @@ def train(args):
         generator=torch.Generator().manual_seed(42),
     )
 
+    raw_model = model
+
     def collate(batch):
         return voco_concat_collate(
-            batch, model, processor, tokenizer,
+            batch, raw_model, processor, tokenizer,
             fps=args.fps,
             frames_per_segment=args.frames_per_segment,
             max_frames=args.max_frames,
         )
 
+    train_sampler = DistributedSampler(train_set, shuffle=True) if world_size > 1 else None
     train_loader = DataLoader(
-        train_set, batch_size=1, shuffle=True, collate_fn=collate,
+        train_set, batch_size=1, sampler=train_sampler,
+        shuffle=(train_sampler is None), collate_fn=collate,
     )
 
     params = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.AdamW(params, lr=args.lr, weight_decay=0.01)
 
-    os.makedirs(args.output_dir, exist_ok=True)
+    if is_main():
+        os.makedirs(args.output_dir, exist_ok=True)
 
     for epoch in range(args.epochs):
         model.train()
+        if train_sampler:
+            train_sampler.set_epoch(epoch)
+
         total_loss = 0
         n = 0
 
-        pbar = tqdm(train_loader, desc=f"Epoch {epoch + 1}")
+        pbar = tqdm(train_loader, desc=f"Epoch {epoch + 1}",
+                    disable=not is_main())
         for batch in pbar:
             if batch is None:
                 continue
@@ -341,18 +383,20 @@ def train(args):
 
                 total_loss += loss.item()
                 n += 1
-                pbar.set_postfix(loss=f"{loss.item():.4f}", voco=total_voco)
+                if is_main():
+                    pbar.set_postfix(loss=f"{loss.item():.4f}", voco=total_voco)
 
             except Exception as e:
-                print(f"  [错误] {e}")
-                import traceback; traceback.print_exc()
+                if is_main():
+                    print(f"  [错误] {e}")
                 continue
 
         avg_loss = total_loss / max(n, 1)
-        print(f"  Epoch {epoch + 1}: train_loss={avg_loss:.4f}")
+        log(f"  Epoch {epoch + 1}: train_loss={avg_loss:.4f}")
 
         # Save
-        ckpt_path = os.path.join(args.output_dir, f"checkpoint_epoch{epoch + 1}.pt")
+        if is_main():
+            ckpt_path = os.path.join(args.output_dir, f"checkpoint_epoch{epoch + 1}.pt")
         torch.save({
             "voco_embeds": model.voco_embeds.detach().cpu(),
             "lora_state_dict": {
@@ -362,7 +406,10 @@ def train(args):
             "epoch": epoch + 1,
             "K_seg": args.K_seg,
         }, ckpt_path)
-        print(f"  saved → {ckpt_path}")
+        log(f"  saved → {ckpt_path}")
+
+    log(f"\nDone.")
+    cleanup_distributed()
 
 
 if __name__ == "__main__":
