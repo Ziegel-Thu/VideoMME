@@ -20,6 +20,7 @@ import os
 import sys
 import json
 import argparse
+import traceback
 
 import torch
 import torch.nn as nn
@@ -66,10 +67,13 @@ def forward_segment(inner, vision_embeds, voco_embeds, position_offset=0):
     seg_len = inputs_embeds.shape[1]
     attention_mask = torch.ones(1, seg_len, dtype=torch.long,
                                 device=vision_embeds.device)
-    position_ids = torch.arange(
+    # Qwen2.5-VL mRoPE 要求 position_ids 形状为 (3, batch, seq_len)
+    # 对非视觉 token，3 个分量（temporal, height, width）取相同值
+    pos_1d = torch.arange(
         position_offset, position_offset + seg_len,
         device=vision_embeds.device,
-    ).unsqueeze(0)
+    )
+    position_ids = pos_1d.view(1, 1, -1).expand(3, 1, -1)
 
     cache = DynamicCache()
     out = inner.model(
@@ -131,23 +135,24 @@ def voco_concat_forward(model, vision_embeds, tokens_per_frame, frames_per_segme
     Returns:
         logits, hidden_states (Q+A 部分)
     """
-    inner = get_inner_model(model.base)
-    K = model.K_seg
-    voco_per_seg = model.voco_embeds  # (K, D)
+    # 解包 DDP（如果 model 被 DDP 包装，需要通过 .module 访问属性）
+    raw = model.module if hasattr(model, "module") else model
+    inner = get_inner_model(raw.base)
+    K = raw.K_seg
+    voco_per_seg = raw.voco_embeds  # (K, D)
 
     # 切段
     segments = split_into_segments(vision_embeds, tokens_per_frame, frames_per_segment)
     n_segments = len(segments)
 
-    # 每段独立 forward 提取 voco cache
+    # 每段独立 forward 提取 voco cache（累加 position_offset 保证位置递增）
     seg_caches = []
     position_offset = 0
     for seg in segments:
-        # 段内 vision 占 V_t 个位置，voco 占 K 个位置
-        # 但段间 vision 不共享位置（每段独立 forward），voco 在最终序列中是连续的
-        # 简化: 每段 forward 用 [0, V_t + K) 的 position_ids
-        seg_cache = forward_segment(inner, seg, voco_per_seg, position_offset=0)
+        seg_cache = forward_segment(inner, seg, voco_per_seg, position_offset=position_offset)
         seg_caches.append(seg_cache)
+        # 该段 vision + voco 占的位置总数
+        position_offset += seg.shape[0] + K
 
     # 拼接 voco caches
     full_cache, total_voco = concat_voco_caches(seg_caches)
@@ -163,10 +168,12 @@ def voco_concat_forward(model, vision_embeds, tokens_per_frame, frames_per_segme
     full_attn_mask = torch.ones(1, total_voco + text_len,
                                 dtype=torch.long, device=text_embeds.device)
 
-    # position_ids: text 部分接在 total_voco 之后
-    text_position_ids = torch.arange(
-        total_voco, total_voco + text_len, device=text_embeds.device,
-    ).unsqueeze(0)
+    # position_ids: text 部分接在所有段（vision+voco）之后
+    text_pos = torch.arange(
+        position_offset, position_offset + text_len, device=text_embeds.device,
+    )
+    # mRoPE: (3, 1, text_len)
+    text_position_ids = text_pos.view(1, 1, -1).expand(3, 1, -1)
 
     out = inner.model(
         inputs_embeds=text_embeds,
@@ -187,79 +194,85 @@ def voco_concat_collate(batch, voco_model, processor, tokenizer,
     assert len(batch) == 1
     item = batch[0]
 
-    base = voco_model.base
-    device = voco_model.voco_embeds.device
-    dtype = voco_model.voco_embeds.dtype
-
-    import uuid as _uuid, tempfile as _tmpfile
-    import decord
-    from qwen_vl_utils import process_vision_info
-    from data import extract_frames
-
     try:
+        # 解包 DDP（collate 应使用 unwrapped model）
+        raw = voco_model.module if hasattr(voco_model, "module") else voco_model
+        base = raw.base
+        device = raw.voco_embeds.device
+        dtype = raw.voco_embeds.dtype
+
+        import uuid as _uuid, tempfile as _tmpfile
+        import decord
+        from qwen_vl_utils import process_vision_info
+        from data import extract_frames
+
         vr = decord.VideoReader(item["_resolved_video"])
         duration = len(vr) / vr.get_avg_fps()
-    except Exception:
+
+        n_frames = max(frames_per_segment, min(int(duration * fps), max_frames))
+        n_frames = (n_frames // frames_per_segment) * frames_per_segment
+        if n_frames == 0:
+            n_frames = frames_per_segment
+
+        frames, _, _ = extract_frames(item["_resolved_video"], n_frames)
+
+        uid = f"{os.getpid()}_{_uuid.uuid4().hex[:8]}"
+        tmp_dir = _tmpfile.gettempdir()
+        tmp_paths = []
+        for i, img in enumerate(frames):
+            p = os.path.join(tmp_dir, f"_vf_{uid}_{i}.jpg")
+            img.save(p)
+            tmp_paths.append(p)
+
+        messages = [{"role": "user", "content": [
+            {"type": "video", "video": tmp_paths, "fps": fps},
+            {"type": "text", "text": "x"},
+        ]}]
+        text = processor.apply_chat_template(messages, tokenize=False,
+                                             add_generation_prompt=False)
+        image_inputs, video_inputs = process_vision_info(messages)
+        proc_inputs = processor(text=[text], images=image_inputs, videos=video_inputs,
+                                return_tensors="pt")
+
+        for p in tmp_paths:
+            try:
+                os.remove(p)
+            except OSError:
+                pass
+
+        pv = proc_inputs.get("pixel_values_videos")
+        vg = proc_inputs.get("video_grid_thw")
+        if pv is None:
+            return None
+
+        video_embeds, tokens_per_frame, _ = get_video_embeds(base, pv, vg, device)
+
+        # Q/A embeds
+        m = base.module if hasattr(base, "module") else base
+        from peft import PeftModel
+        if isinstance(m, PeftModel):
+            embed_layer = m.base_model.model.get_input_embeddings()
+        else:
+            embed_layer = m.get_input_embeddings()
+
+        q_text = f"<|im_start|>user\n{item['question']}<|im_end|>\n<|im_start|>assistant\n"
+        a_text = f"{item['answer']}<|im_end|>"
+
+        q_embeds, _ = encode_text(tokenizer, embed_layer, q_text, device, dtype)
+        a_embeds, a_ids = encode_text(tokenizer, embed_layer, a_text, device, dtype)
+
+        return {
+            "video_embeds": video_embeds.to(dtype),
+            "tokens_per_frame": tokens_per_frame,
+            "frames_per_segment": frames_per_segment,
+            "q_embeds": q_embeds,
+            "a_embeds": a_embeds,
+            "a_ids": a_ids,
+        }
+    except Exception as e:
+        print(f"  [collate 错误] {item.get('_resolved_video', '?')}: {e}\n"
+              f"{traceback.format_exc()}")
         return None
-
-    n_frames = max(frames_per_segment, min(int(duration * fps), max_frames))
-    n_frames = (n_frames // frames_per_segment) * frames_per_segment
-    if n_frames == 0:
-        n_frames = frames_per_segment
-
-    frames, _, _ = extract_frames(item["_resolved_video"], n_frames)
-
-    uid = f"{os.getpid()}_{_uuid.uuid4().hex[:8]}"
-    tmp_dir = _tmpfile.gettempdir()
-    tmp_paths = []
-    for i, img in enumerate(frames):
-        p = os.path.join(tmp_dir, f"_vf_{uid}_{i}.jpg")
-        img.save(p)
-        tmp_paths.append(p)
-
-    messages = [{"role": "user", "content": [
-        {"type": "video", "video": tmp_paths, "fps": fps},
-        {"type": "text", "text": "x"},
-    ]}]
-    text = processor.apply_chat_template(messages, tokenize=False,
-                                         add_generation_prompt=False)
-    image_inputs, video_inputs = process_vision_info(messages)
-    proc_inputs = processor(text=[text], images=image_inputs, videos=video_inputs,
-                            return_tensors="pt")
-
-    for p in tmp_paths:
-        try: os.remove(p)
-        except OSError: pass
-
-    pv = proc_inputs.get("pixel_values_videos")
-    vg = proc_inputs.get("video_grid_thw")
-    if pv is None:
-        return None
-
-    video_embeds, tokens_per_frame, _ = get_video_embeds(base, pv, vg, device)
-
-    # Q/A embeds
-    m = base.module if hasattr(base, "module") else base
-    from peft import PeftModel
-    if isinstance(m, PeftModel):
-        embed_layer = m.base_model.model.get_input_embeddings()
-    else:
-        embed_layer = m.get_input_embeddings()
-
-    q_text = f"<|im_start|>user\n{item['question']}<|im_end|>\n<|im_start|>assistant\n"
-    a_text = f"{item['answer']}<|im_end|>"
-
-    q_embeds, _ = encode_text(tokenizer, embed_layer, q_text, device, dtype)
-    a_embeds, a_ids = encode_text(tokenizer, embed_layer, a_text, device, dtype)
-
-    return {
-        "video_embeds": video_embeds.to(dtype),
-        "tokens_per_frame": tokens_per_frame,
-        "frames_per_segment": frames_per_segment,
-        "q_embeds": q_embeds,
-        "a_embeds": a_embeds,
-        "a_ids": a_ids,
-    }
 
 
 def setup_distributed():
@@ -384,6 +397,14 @@ def train(args):
 
                 optimizer.zero_grad()
                 loss.backward()
+
+                # 多卡手动同步梯度（forward 绕过 DDP wrapper，需显式 allreduce）
+                if world_size > 1:
+                    for p in params:
+                        if p.grad is not None:
+                            dist.all_reduce(p.grad, op=dist.ReduceOp.SUM)
+                            p.grad.div_(world_size)
+
                 torch.nn.utils.clip_grad_norm_(params, 1.0)
                 optimizer.step()
 
@@ -393,26 +414,25 @@ def train(args):
                     pbar.set_postfix(loss=f"{loss.item():.4f}", voco=total_voco)
 
             except Exception as e:
-                if is_main():
-                    print(f"  [错误] {e}")
+                print(f"  [rank {local_rank} 错误] {e}\n{traceback.format_exc()}")
                 continue
 
         avg_loss = total_loss / max(n, 1)
         log(f"  Epoch {epoch + 1}: train_loss={avg_loss:.4f}")
 
-        # Save
+        # Save（仅 rank 0 保存）
         if is_main():
             ckpt_path = os.path.join(args.output_dir, f"checkpoint_epoch{epoch + 1}.pt")
-        torch.save({
-            "voco_embeds": model.voco_embeds.detach().cpu(),
-            "lora_state_dict": {
-                k: v.cpu() for k, v in model.base.state_dict().items()
-                if "lora_" in k
-            },
-            "epoch": epoch + 1,
-            "K_seg": args.K_seg,
-        }, ckpt_path)
-        log(f"  saved → {ckpt_path}")
+            torch.save({
+                "voco_embeds": raw_model.voco_embeds.detach().cpu(),
+                "lora_state_dict": {
+                    k: v.cpu() for k, v in raw_model.base.state_dict().items()
+                    if "lora_" in k
+                },
+                "epoch": epoch + 1,
+                "K_seg": args.K_seg,
+            }, ckpt_path)
+            log(f"  saved → {ckpt_path}")
 
     log(f"\nDone.")
     cleanup_distributed()
