@@ -52,17 +52,20 @@ Stage 4: 长视频 VoCo 压缩 + Segment Selector                        ← 后
 
 ## 实验记录
 
-### 综合对比表（K=32, N=4, test set）
+### 综合对比表（K=32, N=4, 500 条 test set）
 
 | 模型 | 数据量 | BN | Epoch | Test Acc | Test Loss | 备注 |
 |------|--------|-----|-------|----------|-----------|------|
-| 原始 Qwen2.5-VL (zero-shot) | - | - | - | 36.60% (500条) | - | baseline |
-| BN on | 20K | ✅ | 1 | 81.50% (200条) | 0.1429 | |
-| BN on | 20K | ✅ | 2 | 83.50% (200条) | 0.1639 | |
-| BN on | 20K | ✅ | 3 | 82.00% (200条) | 0.2985 | 过拟合 |
-| BN off | 20K | ❌ | 1 | 92.50% (200条) | 0.0539 | |
-| **BN on** | **110K** | **✅** | **1** | **90.00% (500条)** | **0.0913** | ★ |
-| BN on | 110K | ✅ | 2 | 89.00% (500条) | 0.0980 | |
+| 原始 Qwen2.5-VL (zero-shot) | - | - | - | 36.60% | - | baseline |
+| BN on | 20K | ✅ | 1 | 81.50%* | 0.1429 | *200条 |
+| BN on | 20K | ✅ | 2 | 83.50%* | 0.1639 | *200条 |
+| BN on | 20K | ✅ | 3 | 82.00%* | 0.2985 | *200条, 过拟合 |
+| BN off | 20K | ❌ | 1 | 92.50%* | 0.0539 | *200条 |
+| **BN on** | **110K** | **✅** | **1** | **90.00%** | **0.0913** | |
+| BN on | 110K | ✅ | 2 | 89.00% | 0.0980 | |
+| BN on | 110K | ✅ | 3 | 89.80% | 0.1074 | |
+| **BN off** | **110K** | **❌** | **1** | **94.00%** | **0.0504** | |
+| BN off | 110K | ❌ | 2 | 94.40% | 0.0573 | |
 
 ### Sanity Check 对比
 
@@ -94,36 +97,54 @@ Stage 4: 长视频 VoCo 压缩 + Segment Selector                        ← 后
 
 best_val_loss = 0.1831。代码跑通，DDP + gradient checkpointing 工作正常。
 
-### 集群正在跑的实验 (110K, 0-60s)
+### 集群实验进度
 
-最后更新: 2026-05-08 18:00
+最后更新: 2026-05-10 09:30
 
-| 实验 | BN | Cosine | 配置 | SLA | 进度 | 速度 |
-|------|-----|--------|------|-----|------|------|
-| stage2-60s | ✅ | ❌ | 4×A100 K=48 N=12 | Standard | Ep1 18% (4840/27132) | ~7s/步 |
-| stage2-no-bn-fair | ❌ | ❌ | 4×A100 K=48 N=12 | Standard | Ep1 17% (4599/27132) | ~6s/步 |
-| stage2-60s-n4 | ✅ | ❌ | 4×A100 K=32 N=4 | Standard | Ep1 **71%** (19137/27132) | ~1.3s/步 |
-| stage2-60s-cosine | ✅ | ✅ | 4×A100 K=48 N=12 | Basic | Ep1 11% (3020/27132) | ~9s/步 |
-| stage2-no-bn-cos | ❌ | ✅ | 4×A100 K=48 N=12 | Basic | Ep1 9% (2436/27132) | ~7s/步 |
+#### Stage 2 Bottleneck SFT (003)
 
-### 本地正在跑的实验
+| 实验 | BN | N | K | Cosine | 数据 | SLA | 进度 | Checkpoints |
+|------|-----|---|---|--------|------|-----|------|-------------|
+| stage2-60s-n4 | ✅ | 4 | 32 | ❌ | 110K | STD | **Ep4 98%** | ep1+2+3 ✅ |
+| stage2-nobn-n4 | ❌ | 4 | 32 | ❌ | 110K | STD | Ep3 24% | ep1+2 ✅ |
+| stage2-60s | ✅ | 12 | 48 | ❌ | 110K | STD | Ep1 89% | 快完 |
+| stage2-no-bn-fair | ❌ | 12 | 48 | ❌ | 110K | STD | running | |
+| stage2-60s-cosine | ✅ | 12 | 48 | ✅ | 110K | BSC | running | |
+| stage2-no-bn-cos | ❌ | 12 | 48 | ❌ | 110K | BSC | running | |
 
-| 实验 | BN | 配置 | 进度 | 说明 |
-|------|-----|------|------|------|
-| no-BN 20K | ❌ | 1×A100 K=32 N=4 | Ep1 3% (551/18500) | BN on/off 对比 baseline |
+#### VoCo 分段压缩 (004)
 
-### 004 蒸馏实验
+| 实验 | 版本 | 数据 | 状态 | 结果 |
+|------|------|------|------|------|
+| voco-single-200 | 单forward | 200×3ep | ✅ pass | val_loss 0.30→0.25→0.21 |
+| voco-single-10k | 单forward | 10K×5ep | running | Ep2 90% |
+| voco-concat-v3 | 拼接(detach) | 200×3ep | ❌ crash ep1 93% | 显存/边界问题 |
 
-| 实验 | 配置 | 状态 | 说明 |
-|------|------|------|------|
-| distill-0-30s | tpf=8 N=4 全量 | ❌ import 失败，需重提 | data.py 路径问题已修复 |
-| 本地 debug | tpf=8 N=4 20条 | ✅ 通过 loss 3.61→1.85 | compressor 在学 |
+#### 特征提取
+
+| 数据集 | 状态 |
+|--------|------|
+| 0-30s (Basic shard 0-1) | ✅ pass |
+| 0-30s (Basic shard 2-3) | running |
+| 0-30s (Standard shard 0-3) | queued |
+| 30-60s (8 shards) | ✅ 全部 pass |
+| 2-3min (8 shards) | preparing (视频上传中) |
+
+#### Eval 结果汇总
+
+| 实验 | 状态 | 结果 |
+|------|------|------|
+| eval-baseline | ✅ | zero-shot 36.60% |
+| eval-n4-ep1 (BN 110K) | ✅ | 90.00% |
+| eval-n4-ep2 (BN 110K) | ✅ | 89.00% |
+| eval-bn-n4-ep3 (BN 110K) | ✅ | 89.80% |
+| eval-nobn-n4-ep1 (无BN 110K) | ✅ | 94.00% |
+| eval-nobn-n4-ep2 (无BN 110K) | ✅ | 94.40% |
 
 Ablation 设计:
-- **(A) BN On/Off**: stage2-60s vs stage2-no-bn-fair（+ 本地 20K 对比）
-- **(B) Cosine LR**: stage2-60s vs stage2-60s-cosine
-- **(C) N=4 vs N=12**: stage2-60s-n4 vs stage2-60s
-- **(D) tokens_per_frame**: 004 蒸馏后 4/8/16 对比
+- **(A) BN On/Off**: BN on 90% vs BN off 94%（gap ~4%，BN 牺牲准确率换 grounding 能力）
+- **(B) Cosine LR**: 等 stage2-60s-cosine 完成
+- **(C) N=4 vs N=12**: 等 stage2-60s ep1 完成
 
 ---
 
