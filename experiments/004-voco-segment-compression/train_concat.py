@@ -379,26 +379,24 @@ def train(args):
                 a_len = batch["a_embeds"].shape[0]
                 a_ids = batch["a_ids"]
 
-                # logits[i] 预测 i+1 位置；A 部分位于 [q_len, q_len+a_len)
-                # 我们要让 A 的每个位置（除第一个外）和 a_ids 对齐
-                # 实际: logits[q_len-1:q_len-1+a_len] 预测 A 的 token
                 shift_logits = logits[0, q_len - 1: q_len - 1 + a_len, :]
                 shift_labels = a_ids.to(device)
 
                 if shift_logits.shape[0] != shift_labels.shape[0]:
-                    continue
-
-                loss = nn.functional.cross_entropy(
-                    shift_logits.float(), shift_labels,
-                )
+                    # 构造 dummy loss 保持所有 rank 同步
+                    loss = torch.tensor(0.0, device=device, requires_grad=True)
+                else:
+                    loss = nn.functional.cross_entropy(
+                        shift_logits.float(), shift_labels,
+                    )
 
                 if torch.isnan(loss):
-                    continue
+                    loss = torch.tensor(0.0, device=device, requires_grad=True)
 
                 optimizer.zero_grad()
                 loss.backward()
 
-                # 多卡手动同步梯度（forward 绕过 DDP wrapper，需显式 allreduce）
+                # 多卡手动同步梯度
                 if world_size > 1:
                     for p in params:
                         if p.grad is not None:
@@ -408,19 +406,26 @@ def train(args):
                 torch.nn.utils.clip_grad_norm_(params, 1.0)
                 optimizer.step()
 
-                total_loss += loss.item()
-                n += 1
+                real_loss = loss.item()
+                if real_loss > 0:
+                    total_loss += real_loss
+                    n += 1
                 if is_main():
-                    pbar.set_postfix(loss=f"{loss.item():.4f}", voco=total_voco)
+                    pbar.set_postfix(loss=f"{real_loss:.4f}", voco=total_voco)
 
             except Exception as e:
-                print(f"  [rank {local_rank} 错误] {e}\n{traceback.format_exc()}")
-                continue
+                if is_main():
+                    print(f"  [错误] {e}")
+                # 不 continue — 让所有 rank 保持同步
+                pass
 
         avg_loss = total_loss / max(n, 1)
         log(f"  Epoch {epoch + 1}: train_loss={avg_loss:.4f}")
 
         # Save（仅 rank 0 保存）
+        if world_size > 1:
+            dist.barrier()
+
         if is_main():
             ckpt_path = os.path.join(args.output_dir, f"checkpoint_epoch{epoch + 1}.pt")
             torch.save({
@@ -433,6 +438,9 @@ def train(args):
                 "K_seg": args.K_seg,
             }, ckpt_path)
             log(f"  saved → {ckpt_path}")
+
+        if world_size > 1:
+            dist.barrier()
 
     log(f"\nDone.")
     cleanup_distributed()
