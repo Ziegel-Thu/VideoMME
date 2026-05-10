@@ -70,14 +70,41 @@ loss = CrossEntropy(logits[answer_positions], answer_token_ids)
 ├── voco_mask.py        # VoCo-style attention mask
 ├── model.py            # 模型加载 + voco token 注入
 ├── data.py             # Dataset + 分段 collate
-├── train.py            # Stage 2: 分段 SFT 训练
+├── train.py            # 单 forward 版（mask 隔离段间 vision）
+├── train_concat.py     # 拼接版（KV cache concat，省计算量）
 └── amlt.yaml
 ```
 
+## 实验记录
+
+### Pilot 结果
+
+| 实验 | 版本 | 数据 | 结果 |
+|------|------|------|------|
+| 本地 5 条 | 单forward | 5×1ep | ✅ loss 4.03 |
+| 本地 10 条 | 拼接版 | 10×3ep | ✅ loss 3.83→1.11→0.42 |
+| voco-single-200 (集群) | 单forward 4卡 | 200×3ep | ✅ val_loss 0.30→0.25→0.21 |
+| voco-concat-v3 (集群) | 拼接版 4卡 | 200×3ep | ❌ ep1 93% crash (DDP bug) |
+| **voco-single-10k** (集群) | **单forward 4卡** | **10K×5ep** | **running, ep3 25%** |
+
+### 技术发现
+
+1. **VoCo 原论文用 NLL loss**（不是 KL 蒸馏），是标准 SFT + VoCo mask
+2. **单 forward + mask**: 稳定可靠，可用 gradient checkpointing
+3. **拼接版**: 计算量小但不能用 gradient checkpointing (和 use_cache 冲突)
+4. **KV cache 保留计算图**: 梯度可反传到 voco_embeds
+
+## 已完成
+
+- [x] VoCo 风格 attention mask（向量化实现）
+- [x] 单 forward 版 + DDP
+- [x] 拼接版 + detach vision 省显存
+- [x] Pilot 验证 loss 收敛
+- [x] 10K 全量训练提交
+
 ## 待办
 
-- [ ] 实现 VoCo 风格的 attention mask
-- [ ] 实现分段 forward（每段独立 → KV cache 拼接）
-- [ ] 训练 Stage 2: NLL on answer
+- [ ] 修复拼接版 DDP crash bug
 - [ ] 评测 vs 003 (单段 bottleneck SFT)
+- [ ] 预提特征 + 短序列训练（长视频方案）
 - [ ] Stage 3: question-aware temporal head

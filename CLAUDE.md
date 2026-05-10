@@ -150,7 +150,7 @@ video/
 ├── experiments/                 # 实验代码（按编号组织）
 │   ├── 002-latent-bottleneck/   # 单卡 Stage 2 实验（已完成）
 │   ├── 003-bottleneck-multigpu/ # 多卡 DDP Stage 2（当前）
-│   └── 004-voco-distillation/   # VoCo 蒸馏压缩（测试中）
+│   └── 004-voco-segment-compression/ # VoCo 分段压缩（训练中）
 ├── data/                        # 训练数据和视频（gitignore）
 └── plan.md                      # 研究计划（session state 里）
 ```
