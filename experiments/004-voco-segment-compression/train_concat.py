@@ -299,6 +299,41 @@ def log(msg):
         print(msg)
 
 
+def save_checkpoint(raw_model, optimizer, epoch, step, args, output_dir, tag="step"):
+    """保存 checkpoint（voco_embeds + LoRA + optimizer）。"""
+    ckpt_path = os.path.join(output_dir, f"checkpoint_{tag}.pt")
+    torch.save({
+        "voco_embeds": raw_model.voco_embeds.detach().cpu(),
+        "lora_state_dict": {
+            k: v.cpu() for k, v in raw_model.base.state_dict().items()
+            if "lora_" in k
+        },
+        "optimizer_state_dict": optimizer.state_dict(),
+        "epoch": epoch,
+        "step": step,
+        "K_seg": args.K_seg,
+    }, ckpt_path)
+    return ckpt_path
+
+
+def load_resume_checkpoint(model, optimizer, ckpt_path):
+    """从 step checkpoint 恢复训练。"""
+    ckpt = torch.load(ckpt_path, map_location="cpu")
+
+    # 恢复 voco_embeds
+    model.voco_embeds.data.copy_(ckpt["voco_embeds"])
+
+    # 恢复 LoRA weights
+    m = model.base.module if hasattr(model.base, "module") else model.base
+    m.load_state_dict(ckpt["lora_state_dict"], strict=False)
+
+    # 恢复 optimizer
+    if "optimizer_state_dict" in ckpt:
+        optimizer.load_state_dict(ckpt["optimizer_state_dict"])
+
+    return ckpt["epoch"], ckpt["step"]
+
+
 def train(args):
     local_rank, world_size = setup_distributed()
     device = torch.device(f"cuda:{local_rank}")
@@ -307,6 +342,7 @@ def train(args):
     log("004 VoCo 拼接版训练")
     log(f"  GPU 数量: {world_size}")
     log(f"  K_seg: {args.K_seg}, frames/seg: {args.frames_per_segment}")
+    log(f"  save_steps: {args.save_steps}")
     log("=" * 60)
 
     model, processor, tokenizer = setup_voco_model(
@@ -350,17 +386,38 @@ def train(args):
     if is_main():
         os.makedirs(args.output_dir, exist_ok=True)
 
-    for epoch in range(args.epochs):
+    # Resume
+    start_epoch = 0
+    start_step = 0
+    if args.resume_from:
+        log(f"从 {args.resume_from} 恢复...")
+        start_epoch, start_step = load_resume_checkpoint(
+            raw_model, optimizer, args.resume_from,
+        )
+        log(f"  恢复到 epoch={start_epoch}, step={start_step}")
+        # 同步参数到所有 rank
+        if world_size > 1:
+            for p in model.parameters():
+                dist.broadcast(p.data, src=0)
+
+    for epoch in range(start_epoch, args.epochs):
         model.train()
         if train_sampler:
             train_sampler.set_epoch(epoch)
 
         total_loss = 0
         n = 0
+        global_step = 0
 
         pbar = tqdm(train_loader, desc=f"Epoch {epoch + 1}",
                     disable=not is_main())
         for batch in pbar:
+            global_step += 1
+
+            # 跳过已完成的 steps（resume 时）
+            if epoch == start_epoch and global_step <= start_step:
+                continue
+
             if batch is None:
                 continue
 
@@ -383,7 +440,6 @@ def train(args):
                 shift_labels = a_ids.to(device)
 
                 if shift_logits.shape[0] != shift_labels.shape[0]:
-                    # 构造 dummy loss 保持所有 rank 同步
                     loss = torch.tensor(0.0, device=device, requires_grad=True)
                 else:
                     loss = nn.functional.cross_entropy(
@@ -416,18 +472,33 @@ def train(args):
             except Exception as e:
                 if is_main():
                     print(f"  [错误] {e}")
-                # 不 continue — 让所有 rank 保持同步
                 pass
+
+            # Step checkpoint
+            if args.save_steps > 0 and global_step % args.save_steps == 0:
+                if world_size > 1:
+                    dist.barrier()
+                if is_main():
+                    p = save_checkpoint(
+                        raw_model, optimizer, epoch, global_step,
+                        args, args.output_dir, tag=f"e{epoch+1}_s{global_step}",
+                    )
+                    log(f"  step checkpoint → {p}")
+                if world_size > 1:
+                    dist.barrier()
 
         avg_loss = total_loss / max(n, 1)
         log(f"  Epoch {epoch + 1}: train_loss={avg_loss:.4f}")
 
-        # Save（仅 rank 0 保存）
+        # Epoch checkpoint
         if world_size > 1:
             dist.barrier()
 
         if is_main():
-            ckpt_path = os.path.join(args.output_dir, f"checkpoint_epoch{epoch + 1}.pt")
+            # epoch checkpoint（不含 optimizer，用于 eval）
+            ckpt_path = os.path.join(
+                args.output_dir, f"checkpoint_epoch{epoch + 1}.pt",
+            )
             torch.save({
                 "voco_embeds": raw_model.voco_embeds.detach().cpu(),
                 "lora_state_dict": {
@@ -435,12 +506,22 @@ def train(args):
                     if "lora_" in k
                 },
                 "epoch": epoch + 1,
+                "val_loss": avg_loss,
                 "K_seg": args.K_seg,
             }, ckpt_path)
-            log(f"  saved → {ckpt_path}")
+            log(f"  epoch checkpoint → {ckpt_path}")
+
+            # 同时保存含 optimizer 的 resume checkpoint
+            save_checkpoint(
+                raw_model, optimizer, epoch + 1, 0,
+                args, args.output_dir, tag="latest",
+            )
 
         if world_size > 1:
             dist.barrier()
+
+        # 重置 start_step（只在第一个 resume epoch 跳 step）
+        start_step = 0
 
     log(f"\nDone.")
     cleanup_distributed()
@@ -460,5 +541,9 @@ if __name__ == "__main__":
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--lora_r", type=int, default=16)
     parser.add_argument("--gradient_checkpointing", action="store_true")
+    parser.add_argument("--save_steps", type=int, default=500,
+                        help="每 N steps 保存 checkpoint（防抢占）")
+    parser.add_argument("--resume_from", type=str, default=None,
+                        help="从 step checkpoint 恢复训练")
     args = parser.parse_args()
     train(args)
