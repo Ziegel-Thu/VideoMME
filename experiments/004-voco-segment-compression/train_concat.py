@@ -189,8 +189,12 @@ def voco_concat_forward(model, vision_embeds, tokens_per_frame, frames_per_segme
 
 
 def voco_concat_collate(batch, voco_model, processor, tokenizer,
-                        fps=1.0, frames_per_segment=2, max_frames=30):
-    """拼接版 collate: 准备 vision_embeds + Q/A embeds，不提前拼成大序列。"""
+                        fps=1.0, frames_per_segment=2, max_frames=30,
+                        feature_dir=None):
+    """拼接版 collate: 准备 vision_embeds + Q/A embeds，不提前拼成大序列。
+
+    如果 feature_dir 不为 None，优先从预提特征加载（跳过 vision encoder）。
+    """
     assert len(batch) == 1
     item = batch[0]
 
@@ -201,51 +205,68 @@ def voco_concat_collate(batch, voco_model, processor, tokenizer,
         device = raw.voco_embeds.device
         dtype = raw.voco_embeds.dtype
 
-        import uuid as _uuid, tempfile as _tmpfile
-        import decord
-        from qwen_vl_utils import process_vision_info
-        from data import extract_frames
+        video_embeds = None
+        tokens_per_frame = None
 
-        vr = decord.VideoReader(item["_resolved_video"])
-        duration = len(vr) / vr.get_avg_fps()
+        # 尝试从预提特征加载
+        if feature_dir:
+            vname = os.path.basename(item["_resolved_video"])
+            # 特征文件命名: {video_name}_1fps.pt
+            feat_name = vname.replace(".mp4", "") + "_1fps.pt"
+            feat_path = os.path.join(feature_dir, feat_name)
+            if os.path.exists(feat_path):
+                feat = torch.load(feat_path, map_location=device)
+                video_embeds = feat["video_embeds"].to(device=device, dtype=dtype)
+                tokens_per_frame = feat["tokens_per_frame"]
 
-        n_frames = max(frames_per_segment, min(int(duration * fps), max_frames))
-        n_frames = (n_frames // frames_per_segment) * frames_per_segment
-        if n_frames == 0:
-            n_frames = frames_per_segment
+        # 没有预提特征则走 vision encoder
+        if video_embeds is None:
+            import uuid as _uuid, tempfile as _tmpfile
+            import decord
+            from qwen_vl_utils import process_vision_info
+            from data import extract_frames
 
-        frames, _, _ = extract_frames(item["_resolved_video"], n_frames)
+            vr = decord.VideoReader(item["_resolved_video"])
+            duration = len(vr) / vr.get_avg_fps()
 
-        uid = f"{os.getpid()}_{_uuid.uuid4().hex[:8]}"
-        tmp_dir = _tmpfile.gettempdir()
-        tmp_paths = []
-        for i, img in enumerate(frames):
-            p = os.path.join(tmp_dir, f"_vf_{uid}_{i}.jpg")
-            img.save(p)
-            tmp_paths.append(p)
+            n_frames = max(frames_per_segment, min(int(duration * fps), max_frames))
+            n_frames = (n_frames // frames_per_segment) * frames_per_segment
+            if n_frames == 0:
+                n_frames = frames_per_segment
 
-        messages = [{"role": "user", "content": [
-            {"type": "video", "video": tmp_paths, "fps": fps},
-            {"type": "text", "text": "x"},
-        ]}]
-        text = processor.apply_chat_template(messages, tokenize=False,
-                                             add_generation_prompt=False)
-        image_inputs, video_inputs = process_vision_info(messages)
-        proc_inputs = processor(text=[text], images=image_inputs, videos=video_inputs,
-                                return_tensors="pt")
+            frames, _, _ = extract_frames(item["_resolved_video"], n_frames)
 
-        for p in tmp_paths:
-            try:
-                os.remove(p)
-            except OSError:
-                pass
+            uid = f"{os.getpid()}_{_uuid.uuid4().hex[:8]}"
+            tmp_dir = _tmpfile.gettempdir()
+            tmp_paths = []
+            for i, img in enumerate(frames):
+                p = os.path.join(tmp_dir, f"_vf_{uid}_{i}.jpg")
+                img.save(p)
+                tmp_paths.append(p)
 
-        pv = proc_inputs.get("pixel_values_videos")
-        vg = proc_inputs.get("video_grid_thw")
-        if pv is None:
-            return None
+            messages = [{"role": "user", "content": [
+                {"type": "video", "video": tmp_paths, "fps": fps},
+                {"type": "text", "text": "x"},
+            ]}]
+            text = processor.apply_chat_template(messages, tokenize=False,
+                                                 add_generation_prompt=False)
+            image_inputs, video_inputs = process_vision_info(messages)
+            proc_inputs = processor(text=[text], images=image_inputs, videos=video_inputs,
+                                     return_tensors="pt")
 
-        video_embeds, tokens_per_frame, _ = get_video_embeds(base, pv, vg, device)
+            for p in tmp_paths:
+                try:
+                    os.remove(p)
+                except OSError:
+                    pass
+
+            pv = proc_inputs.get("pixel_values_videos")
+            vg = proc_inputs.get("video_grid_thw")
+            if pv is None:
+                return None
+
+            video_embeds, tokens_per_frame, _ = get_video_embeds(base, pv, vg, device)
+            video_embeds = video_embeds.to(dtype)
 
         # Q/A embeds
         m = base.module if hasattr(base, "module") else base
@@ -262,7 +283,7 @@ def voco_concat_collate(batch, voco_model, processor, tokenizer,
         a_embeds, a_ids = encode_text(tokenizer, embed_layer, a_text, device, dtype)
 
         return {
-            "video_embeds": video_embeds.to(dtype),
+            "video_embeds": video_embeds,
             "tokens_per_frame": tokens_per_frame,
             "frames_per_segment": frames_per_segment,
             "q_embeds": q_embeds,
@@ -343,6 +364,8 @@ def train(args):
     log(f"  GPU 数量: {world_size}")
     log(f"  K_seg: {args.K_seg}, frames/seg: {args.frames_per_segment}")
     log(f"  save_steps: {args.save_steps}")
+    if args.feature_dir:
+        log(f"  预提特征: {args.feature_dir}")
     log("=" * 60)
 
     model, processor, tokenizer = setup_voco_model(
@@ -372,6 +395,7 @@ def train(args):
             fps=args.fps,
             frames_per_segment=args.frames_per_segment,
             max_frames=args.max_frames,
+            feature_dir=args.feature_dir,
         )
 
     train_sampler = DistributedSampler(train_set, shuffle=True) if world_size > 1 else None
@@ -545,5 +569,7 @@ if __name__ == "__main__":
                         help="每 N steps 保存 checkpoint（防抢占）")
     parser.add_argument("--resume_from", type=str, default=None,
                         help="从 step checkpoint 恢复训练")
+    parser.add_argument("--feature_dir", type=str, default=None,
+                        help="预提特征目录（跳过 vision encoder）")
     args = parser.parse_args()
     train(args)
