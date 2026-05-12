@@ -32,3 +32,22 @@ jobs:
         --epochs 3 --lr 2e-5
         --save_steps 1375
         2>&1 | tee $$AMLT_OUTPUT_DIR/train_log.txt
+
+  - name: voco-concat-110k-fps4
+    sku: 80G4-A100-NvLink
+    sla_tier: standard
+    command:
+      - >-
+        mkdir -p /tmp/features_merged &&
+        ln -sf /mnt/default/bottleneck/features_1fps_short/*.pt /tmp/features_merged/ &&
+        ln -sf /mnt/default/bottleneck/features_1fps_30_60s/*.pt /tmp/features_merged/ &&
+        echo "特征文件合并完成: $$(ls /tmp/features_merged/*.pt | wc -l) 个" &&
+        torchrun --nproc_per_node=4 train_concat.py
+        --data_path /mnt/default/bottleneck/data/visual_qa_v3_60s_train.jsonl
+        --video_dirs /mnt/default/bottleneck/data/videos/0_30_s_academic_v0_1,/mnt/default/bottleneck/data/videos/30_60_s_academic_v0_1
+        --output_dir $$AMLT_OUTPUT_DIR
+        --feature_dir /tmp/features_merged
+        --K_seg 4 --frames_per_segment 4 --max_frames 30
+        --epochs 3 --lr 2e-5
+        --save_steps 1375
+        2>&1 | tee $$AMLT_OUTPUT_DIR/train_log.txt
