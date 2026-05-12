@@ -84,8 +84,21 @@ loss = CrossEntropy(logits[answer_positions], answer_token_ids)
 | 本地 5 条 | 单forward | 5×1ep | ✅ loss 4.03 |
 | 本地 10 条 | 拼接版 | 10×3ep | ✅ loss 3.83→1.11→0.42 |
 | voco-single-200 (集群) | 单forward 4卡 | 200×3ep | ✅ val_loss 0.30→0.25→0.21 |
-| voco-concat-v3 (集群) | 拼接版 4卡 | 200×3ep | ❌ ep1 93% crash (DDP bug) |
-| **voco-single-10k** (集群) | **单forward 4卡** | **10K×5ep** | **running, ep3 25%** |
+| voco-concat-v3 (集群) | 拼接版 4卡 | 200×3ep | ✅ pass (DDP修复后) train 1.52→0.57→0.28 |
+
+### 10K 评测结果 (500 条 test set)
+
+| Epoch | Test Acc | Test Loss |
+|-------|----------|-----------|
+| 1 | 70.40% | 0.3760 |
+| 2 | 66.00% | 0.4432 (过拟合) |
+
+### 110K 集群训练
+
+| 实验 | 版本 | 状态 | 结果 |
+|------|------|------|------|
+| voco-110k-v4 | 单forward | ❌ SIGABRT (ep1 8%) | loss 卡 3.4375 不降，rank 1 被 kill |
+| voco-concat-110k | 拼接版 | 🟢 running (ep1 31%) | 正常训练中，loss 在降 |
 
 ### 技术发现
 
@@ -93,18 +106,23 @@ loss = CrossEntropy(logits[answer_positions], answer_token_ids)
 2. **单 forward + mask**: 稳定可靠，可用 gradient checkpointing
 3. **拼接版**: 计算量小但不能用 gradient checkpointing (和 use_cache 冲突)
 4. **KV cache 保留计算图**: 梯度可反传到 voco_embeds
+5. **拼接版 DDP**: 需手动 all_reduce，避免 UnboundLocalError + NCCL 同步问题
+6. **NCCL timeout**: 混合长度数据需设 timeout=2h（init_process_group）
+7. **VoCo 压缩比 54:1** vs 003 BN 13.5:1，信息损失大
 
 ## 已完成
 
 - [x] VoCo 风格 attention mask（向量化实现）
 - [x] 单 forward 版 + DDP
 - [x] 拼接版 + detach vision 省显存
+- [x] 拼接版 DDP crash 修复（UnboundLocalError + NCCL 同步）
 - [x] Pilot 验证 loss 收敛
-- [x] 10K 全量训练提交
+- [x] 10K 训练 + 评测
+- [x] 110K 拼接版集群训练中
 
 ## 待办
 
-- [ ] 修复拼接版 DDP crash bug
+- [ ] 110K 评测（等拼接版完成）
+- [ ] 单 forward 110K 崩溃排查
 - [ ] 评测 vs 003 (单段 bottleneck SFT)
-- [ ] 预提特征 + 短序列训练（长视频方案）
 - [ ] Stage 3: question-aware temporal head

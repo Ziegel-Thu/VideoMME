@@ -67,6 +67,8 @@ Stage 4: 长视频 VoCo 压缩 + Segment Selector                        ← 后
 | 003 BN on | 110K | BN K=32 N=4 | 4 | 88.20% | 0.1616 | |
 | **003 BN off** | **110K** | **无BN K=32 N=4** | **1** | **94.00%** | **0.0504** | |
 | 003 BN off | 110K | 无BN K=32 N=4 | 2 | **94.40%** | 0.0573 | ★ |
+| 003 BN on | 110K | BN K=48 N=12 | 1 | 89.00% | 0.1044 | |
+| 003 BN off | 110K | 无BN K=48 N=12 | 1 | 91.80% | 0.0768 | |
 | 004 VoCo 分段 | 10K | VoCo K_seg=4 1fps | 1 | 70.40% | 0.3760 | |
 | 004 VoCo 分段 | 10K | VoCo K_seg=4 1fps | 2 | 66.00% | 0.4432 | 过拟合 |
 
@@ -102,52 +104,34 @@ best_val_loss = 0.1831。代码跑通，DDP + gradient checkpointing 工作正�
 
 ### 集群实验进度
 
-最后更新: 2026-05-10 09:30
+最后更新: 2026-05-12 02:45
 
 #### Stage 2 Bottleneck SFT (003)
 
-| 实验 | BN | N | K | Cosine | 数据 | SLA | 进度 | Checkpoints |
-|------|-----|---|---|--------|------|-----|------|-------------|
-| stage2-60s-n4 | ✅ | 4 | 32 | ❌ | 110K | STD | **Ep4 98%** | ep1+2+3 ✅ |
-| stage2-nobn-n4 | ❌ | 4 | 32 | ❌ | 110K | STD | Ep3 24% | ep1+2 ✅ |
-| stage2-60s | ✅ | 12 | 48 | ❌ | 110K | STD | Ep1 89% | 快完 |
-| stage2-no-bn-fair | ❌ | 12 | 48 | ❌ | 110K | STD | running | |
-| stage2-60s-cosine | ✅ | 12 | 48 | ✅ | 110K | BSC | running | |
-| stage2-no-bn-cos | ❌ | 12 | 48 | ❌ | 110K | BSC | running | |
+| 实验 | BN | N | K | Cosine | 数据 | SLA | 状态 | best_val_loss | Eval |
+|------|-----|---|---|--------|------|-----|------|---------------|------|
+| stage2-60s-n4 | ✅ | 4 | 32 | ❌ | 110K | STD | ✅ pass (5ep) | 0.1012 | 90.0% |
+| stage2-nobn-n4 | ❌ | 4 | 32 | ❌ | 110K | STD | ✅ pass (5ep) | 0.0877 | 94.0%/94.4% |
+| stage2-60s | ✅ | 12 | 48 | ❌ | 110K | STD | 🛑 cancelled (Ep2 63%) | 0.1044 | 89.0% |
+| stage2-no-bn-fair | ❌ | 12 | 48 | ❌ | 110K | STD | 🛑 cancelled (Ep2 63%) | 0.0768 | 91.8% |
+| stage2-60s-cosine | ✅ | 12 | 48 | ✅ | 110K | BSC | 🛑 cancelled (Ep1 17%) | - | - |
+| stage2-no-bn-cos | ❌ | 12 | 48 | ❌ | 110K | BSC | 🛑 cancelled (Ep1 27%) | - | - |
 
 #### VoCo 分段压缩 (004)
 
 | 实验 | 版本 | 数据 | 状态 | 结果 |
 |------|------|------|------|------|
 | voco-single-200 | 单forward | 200×3ep | ✅ pass | val_loss 0.30→0.25→0.21 |
-| voco-single-10k | 单forward | 10K×5ep | running | Ep2 90% |
-| voco-concat-v3 | 拼接(detach) | 200×3ep | ❌ crash ep1 93% | 显存/边界问题 |
+| voco-single-10k | 单forward | 10K×5ep | ✅ pass | ep1 70.4%, ep2 66.0% (过拟合) |
+| voco-concat-v3 | 拼接(detach) | 200×3ep | ✅ pass (DDP修复) | train 1.52→0.57→0.28 |
+| voco-110k-v4 | 单forward | 110K | ❌ SIGABRT (ep1 8%) | loss 卡 3.4375 不降 |
+| voco-concat-110k | 拼接版 | 110K | 🟢 running (ep1 31%) | 正常训练中 |
 
-#### 特征提取
+#### 核心结论
 
-| 数据集 | 状态 |
-|--------|------|
-| 0-30s (Basic shard 0-1) | ✅ pass |
-| 0-30s (Basic shard 2-3) | running |
-| 0-30s (Standard shard 0-3) | queued |
-| 30-60s (8 shards) | ✅ 全部 pass |
-| 2-3min (8 shards) | preparing (视频上传中) |
-
-#### Eval 结果汇总
-
-| 实验 | 状态 | 结果 |
-|------|------|------|
-| eval-baseline | ✅ | zero-shot 36.60% |
-| eval-n4-ep1 (BN 110K) | ✅ | 90.00% |
-| eval-n4-ep2 (BN 110K) | ✅ | 89.00% |
-| eval-bn-n4-ep3 (BN 110K) | ✅ | 89.80% |
-| eval-nobn-n4-ep1 (无BN 110K) | ✅ | 94.00% |
-| eval-nobn-n4-ep2 (无BN 110K) | ✅ | 94.40% |
-
-Ablation 设计:
-- **(A) BN On/Off**: BN on 90% vs BN off 94%（gap ~4%，BN 牺牲准确率换 grounding 能力）
-- **(B) Cosine LR**: 等 stage2-60s-cosine 完成
-- **(C) N=4 vs N=12**: 等 stage2-60s ep1 完成
+- **BN On/Off**: BN on 90% vs BN off 94%（gap ~4%），bottleneck 牺牲准确率换 grounding 能力
+- **N=4 vs N=12**: N=12 反而略差（BN: 89% vs 90%, NoBN: 91.8% vs 94%），可能训练不充分或帧数多反而引入噪声
+- **VoCo vs BN**: VoCo 10K 70.4% 远低于 BN 110K 90%，压缩比过于激进(54:1 vs 13.5:1)，且数据量不足
 
 ---
 
