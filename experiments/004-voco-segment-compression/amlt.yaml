@@ -14,7 +14,7 @@ code:
   local_dir: $CONFIG_DIR
 
 jobs:
-  - name: voco-concat-110k-v4
+  - name: voco-concat-110k-v5
     sku: 80G4-A100-NvLink
     sla_tier: standard
     command:
