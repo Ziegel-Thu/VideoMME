@@ -368,11 +368,15 @@ def train(args):
         log(f"  预提特征: {args.feature_dir}")
     log("=" * 60)
 
+    # 拼接版不注入 4D mask，可以用 SDPA 加速
+    lora_targets = args.lora_targets.split(",") if args.lora_targets else None
     model, processor, tokenizer = setup_voco_model(
         K_seg=args.K_seg,
         lora_r=args.lora_r,
+        lora_targets=lora_targets,
         device=device,
         gradient_checkpointing=False,  # 拼接版不能用 grad ckpt (和 use_cache 冲突)
+        attn_implementation="sdpa",
     )
 
     video_dirs = args.video_dirs.split(",")
@@ -564,6 +568,8 @@ if __name__ == "__main__":
     parser.add_argument("--lr", type=float, default=2e-5)
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--lora_r", type=int, default=16)
+    parser.add_argument("--lora_targets", type=str, default=None,
+                        help="LoRA target modules，逗号分隔 (默认全部 7 个)")
     parser.add_argument("--gradient_checkpointing", action="store_true")
     parser.add_argument("--save_steps", type=int, default=500,
                         help="每 N steps 保存 checkpoint（防抢占）")

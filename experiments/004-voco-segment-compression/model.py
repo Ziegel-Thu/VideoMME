@@ -109,16 +109,29 @@ def setup_voco_model(
     K_seg=4,
     lora_r=16,
     lora_alpha=32,
+    lora_targets=None,
     device=None,
     gradient_checkpointing=False,
+    attn_implementation="eager",
 ):
-    """加载 Qwen2.5-VL，配 LoRA，包装 VoCoSegmentModel。"""
+    """加载 Qwen2.5-VL，配 LoRA，包装 VoCoSegmentModel。
+
+    Args:
+        attn_implementation: "eager" (支持自定义 4D mask) 或 "sdpa" (更快，拼接版用)
+        lora_targets: LoRA target modules 列表，默认全部 7 个
+    """
     if device is None:
         device = torch.device("cuda")
 
+    if lora_targets is None:
+        lora_targets = [
+            "q_proj", "k_proj", "v_proj", "o_proj",
+            "gate_proj", "up_proj", "down_proj",
+        ]
+
     base = Qwen2_5_VLForConditionalGeneration.from_pretrained(
         model_name, torch_dtype=torch.bfloat16,
-        attn_implementation="eager",
+        attn_implementation=attn_implementation,
     ).to(device)
     base.config.use_cache = False
 
@@ -132,10 +145,7 @@ def setup_voco_model(
     # LoRA on LLM
     lora_config = LoraConfig(
         r=lora_r, lora_alpha=lora_alpha,
-        target_modules=[
-            "q_proj", "k_proj", "v_proj", "o_proj",
-            "gate_proj", "up_proj", "down_proj",
-        ],
+        target_modules=lora_targets,
         lora_dropout=0.05, bias="none", task_type="CAUSAL_LM",
     )
     base = get_peft_model(base, lora_config)
