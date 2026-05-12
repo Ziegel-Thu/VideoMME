@@ -215,7 +215,8 @@ def voco_concat_collate(batch, voco_model, processor, tokenizer,
             feat_name = vname.replace(".mp4", "") + "_1fps.pt"
             feat_path = os.path.join(feature_dir, feat_name)
             if os.path.exists(feat_path):
-                feat = torch.load(feat_path, map_location=device)
+                feat = torch.load(feat_path, map_location="cpu",
+                                  weights_only=True)
                 video_embeds = feat["video_embeds"].to(device=device, dtype=dtype)
                 tokens_per_frame = feat["tokens_per_frame"]
 
