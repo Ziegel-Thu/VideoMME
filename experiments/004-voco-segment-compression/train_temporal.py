@@ -343,7 +343,7 @@ def compute_tiou(pred_segments, gt_segments):
         for start, end in segs:
             t = start
             while t < end:
-                s.add(round(t, 0.1) if end - start > 1 else round(t, 0.1))
+                s.add(round(t, 1))
                 t += 0.1
         return s
 
