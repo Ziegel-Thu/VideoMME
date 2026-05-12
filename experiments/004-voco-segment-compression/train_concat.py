@@ -368,7 +368,9 @@ def train(args):
         log(f"  预提特征: {args.feature_dir}")
     log("=" * 60)
 
-    # 拼接版不注入 4D mask，可以用 SDPA 加速
+    # 拼接版不注入 4D mask，理论上可用 SDPA
+    # 但 SDPA backward 在长序列上更耗显存，4 卡 80GB 会 OOM
+    # 保守用 eager
     lora_targets = args.lora_targets.split(",") if args.lora_targets else None
     model, processor, tokenizer = setup_voco_model(
         K_seg=args.K_seg,
@@ -376,7 +378,7 @@ def train(args):
         lora_targets=lora_targets,
         device=device,
         gradient_checkpointing=False,  # 拼接版不能用 grad ckpt (和 use_cache 冲突)
-        attn_implementation="sdpa",
+        attn_implementation="eager",
     )
 
     video_dirs = args.video_dirs.split(",")
