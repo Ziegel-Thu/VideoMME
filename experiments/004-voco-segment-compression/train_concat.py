@@ -450,8 +450,13 @@ def train(args):
                 continue
 
             if batch is None:
+                # 所有 rank 必须同步：用 dummy all_reduce
+                if world_size > 1:
+                    dummy = torch.zeros(1, device=device)
+                    dist.all_reduce(dummy)
                 continue
 
+            loss = None
             try:
                 logits, _, total_voco = voco_concat_forward(
                     model,
@@ -480,10 +485,26 @@ def train(args):
                 if torch.isnan(loss):
                     loss = torch.tensor(0.0, device=device, requires_grad=True)
 
+            except RuntimeError as e:
+                if "out of memory" in str(e):
+                    if is_main():
+                        print(f"  [OOM] 跳过该样本，清理显存")
+                    torch.cuda.empty_cache()
+                else:
+                    if is_main():
+                        print(f"  [错误] {e}")
+                loss = None
+
+            except Exception as e:
+                if is_main():
+                    print(f"  [错误] {e}")
+                loss = None
+
+            # 统一梯度同步：无论成功/失败都必须执行
+            if loss is not None and loss.requires_grad:
                 optimizer.zero_grad()
                 loss.backward()
 
-                # 多卡手动同步梯度
                 if world_size > 1:
                     for p in params:
                         if p.grad is not None:
@@ -499,11 +520,14 @@ def train(args):
                     n += 1
                 if is_main():
                     pbar.set_postfix(loss=f"{real_loss:.4f}", voco=total_voco)
-
-            except Exception as e:
-                if is_main():
-                    print(f"  [错误] {e}")
-                pass
+            else:
+                # 失败时：dummy all_reduce 保持 rank 同步
+                if world_size > 1:
+                    for p in params:
+                        if p.grad is not None:
+                            p.grad.zero_()
+                    dummy = torch.zeros(1, device=device)
+                    dist.all_reduce(dummy)
 
             # Step checkpoint
             if args.save_steps > 0 and global_step % args.save_steps == 0:
