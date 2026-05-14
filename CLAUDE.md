@@ -36,8 +36,8 @@
 ### 训练流程
 
 ```
-Stage 1: Segment latent token 压缩 (VoCo-style，可跳过)
-Stage 2: Bottleneck SFT — MCQ 数据训 L_ans  ← 当前阶段
+Stage 1: Segment latent token 压缩 (VoCo-style)  ← 当前阶段 (004)
+Stage 2: Bottleneck SFT — MCQ 数据训 L_ans（已完成，003）
 Stage 3: Temporal Head — temporal 数据训 L_temp
 Stage 4: 长视频 VoCo 压缩 + Segment Selector
 ```
@@ -72,7 +72,7 @@ Stage 4: 长视频 VoCo 压缩 + Segment Selector
   - 方法：latent tokens + bottleneck mask + VoCo 压缩 + Temporal Head
   - Claim：bottleneck 迫使 latent 承载视觉信息，单次前向做 grounding
 - **训练路线**：Stage 1 VoCo(可跳) → Stage 2 Bottleneck SFT(MCQ) → Stage 3 Temporal Head(temporal data)
-- **当前阶段**：004-voco-segment-compression（VoCo 分段压缩，A40×8 集群）
+- **当前阶段**：004-voco-segment-compression（VoCo 分段压缩，A40×8 集群，VoCo-only ablation 进行中）
 - **启动任何实验前，先确认"当前在哪个 Stage，用什么数据，训什么参数"**
 
 ### 1. 训练前必检清单（每次启动训练前逐条确认）

@@ -67,11 +67,13 @@ loss = CrossEntropy(logits[answer_positions], answer_token_ids)
 ```
 004-voco-segment-compression/
 ├── README.md
-├── voco_mask.py        # VoCo-style attention mask
-├── model.py            # 模型加载 + voco token 注入
+├── model.py            # 模型加载 + voco token 注入（支持 use_lora=True/False）
 ├── data.py             # Dataset + 分段 collate
 ├── train.py            # 单 forward 版（mask 隔离段间 vision）
-├── train_concat.py     # 拼接版（KV cache concat，省计算量）
+├── train_concat.py     # 拼接版（KV cache concat，省计算量）+ LoRA
+├── train_voco_only.py  # VoCo-only 训练（冻结 LLM，无 LoRA，只训 voco_embeds）
+├── eval_mcq.py         # MCQ 评测（logit / generation / NLL 三种方法）
+├── eval_voco.py        # VoCo checkpoint 评测
 └── amlt.yaml
 ```
 
@@ -119,6 +121,9 @@ loss = CrossEntropy(logits[answer_positions], answer_token_ids)
 - [x] Pilot 验证 loss 收敛
 - [x] 10K 训练 + 评测
 - [x] 110K 拼接版集群训练中
+- [x] model.py 支持 use_lora=False（冻结 LLM）
+- [x] VoCo-only 训练脚本 (train_voco_only.py)
+- [x] MCQ 评测脚本 (eval_mcq.py) — logit / generation / NLL 三种方法
 
 ## 待办
 
@@ -126,3 +131,49 @@ loss = CrossEntropy(logits[answer_positions], answer_token_ids)
 - [ ] 单 forward 110K 崩溃排查
 - [ ] 评测 vs 003 (单段 bottleneck SFT)
 - [ ] Stage 3: question-aware temporal head
+- [ ] VoCo-only ablation 完整训练 + 评测
+- [ ] VoCo-only vs VoCo+LoRA 对比
+
+---
+
+## A40 集群实验（jiagpu8, 8×A40 48GB）
+
+### 环境
+
+- **机器**: jiagpu8
+- **GPU**: 8× NVIDIA A40 48GB
+- **存储**: NFS (代码) + SSD `/nvmessd/` (数据/视频)
+- **conda**: `video` (python 3.11, torch 2.6.0+cu124, transformers 4.57.6, peft 0.19.1)
+- **数据**: SSD 上 visual_qa_v3_0_60 (110K train / 5K val / 10K test), 1755 个视频（tar part 2 解压）
+
+### VoCo-only Ablation
+
+**目的**: 验证纯 VoCo 压缩能力。冻结 LLM（无 LoRA），只训练 voco_embeds (K_seg=8, 28K 参数)。
+如果无 LoRA 也能收敛，说明 VoCo 压缩本身 work，LLM 不需要额外适配。
+
+**与 train_concat.py 的区别**:
+
+| 项目 | train_concat (VoCo+LoRA) | train_voco_only (VoCo-only) |
+|------|--------------------------|----------------------------|
+| 可训练参数 | voco_embeds + LoRA (~20M) | voco_embeds only (28K) |
+| K_seg 默认 | 4 | 8 |
+| LR 默认 | 2e-5 | 1e-3 |
+| 预提特征 | 支持 | 暂不支持 |
+| 显存占用 | 较高（LoRA 梯度+优化器） | 较低（只有 voco_embeds 梯度） |
+
+### Zero-shot Baseline 重测
+
+**目的**: 用更合理的评测方法（per-option logit 比较 + 自由生成）重测 Qwen2.5-VL zero-shot 准确率。
+
+**旧评测 (eval_baseline.py)**: next-token argmax 全词表 → 36.6%（偏低，受格式影响）
+**新评测 (eval_mcq.py)**: 三种方法对比
+- logit: ABCD 四个 token 的 logit 比较（一次 forward）
+- gen: 自由生成 + 正则提取答案
+- nll: per-option 完整 NLL（最严谨，慢 4 倍）
+
+### 实验进度
+
+| 实验 | tmux | GPU | 状态 | 结果 |
+|------|------|-----|------|------|
+| zero-shot 评测 (200条) | eval-baseline | 卡 0 | 🟡 等模型下载 | - |
+| VoCo-only overfit (10条) | voco-overfit | 卡 1 | 🟡 等模型下载 | - |
