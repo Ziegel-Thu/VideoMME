@@ -113,21 +113,17 @@ def setup_voco_model(
     device=None,
     gradient_checkpointing=False,
     attn_implementation="eager",
+    use_lora=True,
 ):
-    """加载 Qwen2.5-VL，配 LoRA，包装 VoCoSegmentModel。
+    """加载 Qwen2.5-VL，包装 VoCoSegmentModel。
 
     Args:
         attn_implementation: "eager" (支持自定义 4D mask) 或 "sdpa" (更快，拼接版用)
         lora_targets: LoRA target modules 列表，默认全部 7 个
+        use_lora: True=加 LoRA 微调 LLM；False=完全冻结 LLM，只训 voco_embeds
     """
     if device is None:
         device = torch.device("cuda")
-
-    if lora_targets is None:
-        lora_targets = [
-            "q_proj", "k_proj", "v_proj", "o_proj",
-            "gate_proj", "up_proj", "down_proj",
-        ]
 
     base = Qwen2_5_VLForConditionalGeneration.from_pretrained(
         model_name, torch_dtype=torch.bfloat16,
@@ -142,21 +138,32 @@ def setup_voco_model(
     for p in base.visual.parameters():
         p.requires_grad = False
 
-    # LoRA on LLM
-    lora_config = LoraConfig(
-        r=lora_r, lora_alpha=lora_alpha,
-        target_modules=lora_targets,
-        lora_dropout=0.05, bias="none", task_type="CAUSAL_LM",
-    )
-    base = get_peft_model(base, lora_config)
-
-    if gradient_checkpointing:
-        base.enable_input_require_grads()
-        base.gradient_checkpointing_enable(
-            gradient_checkpointing_kwargs={"use_reentrant": False},
+    if use_lora:
+        if lora_targets is None:
+            lora_targets = [
+                "q_proj", "k_proj", "v_proj", "o_proj",
+                "gate_proj", "up_proj", "down_proj",
+            ]
+        lora_config = LoraConfig(
+            r=lora_r, lora_alpha=lora_alpha,
+            target_modules=lora_targets,
+            lora_dropout=0.05, bias="none", task_type="CAUSAL_LM",
         )
+        base = get_peft_model(base, lora_config)
 
-    base.print_trainable_parameters()
+        if gradient_checkpointing:
+            base.enable_input_require_grads()
+            base.gradient_checkpointing_enable(
+                gradient_checkpointing_kwargs={"use_reentrant": False},
+            )
+        base.print_trainable_parameters()
+    else:
+        # 完全冻结 LLM，只有 VoCoSegmentModel.voco_embeds 可训练
+        for p in base.parameters():
+            p.requires_grad = False
+        n_total = sum(p.numel() for p in base.parameters())
+        print(f"LLM 完全冻结 ({n_total:,} 参数)，只训练 voco_embeds "
+              f"({K_seg} × 3584 = {K_seg * 3584:,} 参数)")
 
     # 包装 VoCoSegmentModel
     model = VoCoSegmentModel(base, K_seg=K_seg, hidden_dim=3584).to(

@@ -4,7 +4,14 @@
 
 本项目研究视频理解与多模态大模型评测，核心方向：在 VLM 中加 latent visual bottleneck 做 grounded video reasoning。
 
-硬件环境：A100 80GB，集群可用多卡（4×A100）。
+硬件环境：A40 48GB × 8（jiagpu4/5/6/7/8 五台，每台 8 卡）。
+
+### 存储布局
+
+- **NFS**（代码）：`/beegfs_hdd/data/nfs_share/users/lifanhong/nishome/video/` — 共享文件系统，所有机器可见
+- **SSD**（数据）：`/nvmessd/lifanhong/video/` — 本地高速存储，14T 总量
+  - `parsed/` — jsonl 标注文件（v3, 0-60s, 110K train / 5K val / 10K test）
+  - `llava-video/` — 视频文件（需要解压/下载）
 
 ---
 
@@ -65,7 +72,7 @@ Stage 4: 长视频 VoCo 压缩 + Segment Selector
   - 方法：latent tokens + bottleneck mask + VoCo 压缩 + Temporal Head
   - Claim：bottleneck 迫使 latent 承载视觉信息，单次前向做 grounding
 - **训练路线**：Stage 1 VoCo(可跳) → Stage 2 Bottleneck SFT(MCQ) → Stage 3 Temporal Head(temporal data)
-- **当前阶段**：Stage 2 多卡训练（003-bottleneck-multigpu，4×A100，N=8~16帧）
+- **当前阶段**：004-voco-segment-compression（VoCo 分段压缩，A40×8 集群）
 - **启动任何实验前，先确认"当前在哪个 Stage，用什么数据，训什么参数"**
 
 ### 1. 训练前必检清单（每次启动训练前逐条确认）
