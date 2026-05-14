@@ -317,6 +317,7 @@ def train(args):
     log("=" * 60)
 
     model, processor, tokenizer = setup_voco_model(
+        model_name=args.model_path,
         K_seg=args.K_seg,
         device=device,
         use_lora=False,
@@ -540,5 +541,8 @@ if __name__ == "__main__":
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--save_steps", type=int, default=500)
     parser.add_argument("--resume_from", type=str, default=None)
+    parser.add_argument("--model_path", type=str,
+                        default="Qwen/Qwen2.5-VL-7B-Instruct",
+                        help="模型路径（HF name 或本地路径）")
     args = parser.parse_args()
     train(args)

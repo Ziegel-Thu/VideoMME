@@ -210,13 +210,13 @@ def main(args):
 
     print("加载模型...")
     model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-        "Qwen/Qwen2.5-VL-7B-Instruct",
+        args.model_path,
         torch_dtype=torch.bfloat16,
         attn_implementation="eager",
     ).to(device)
     model.eval()
 
-    processor = AutoProcessor.from_pretrained("Qwen/Qwen2.5-VL-7B-Instruct")
+    processor = AutoProcessor.from_pretrained(args.model_path)
     tokenizer = processor.tokenizer
 
     # 建立视频索引
@@ -354,5 +354,8 @@ if __name__ == "__main__":
                         help="额外跑 per-option NLL 方法（慢 4 倍）")
     parser.add_argument("--output", type=str, default=None,
                         help="保存结果 JSON")
+    parser.add_argument("--model_path", type=str,
+                        default="Qwen/Qwen2.5-VL-7B-Instruct",
+                        help="模型路径（HF name 或本地路径）")
     args = parser.parse_args()
     main(args)
