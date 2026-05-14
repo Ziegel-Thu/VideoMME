@@ -175,5 +175,14 @@ loss = CrossEntropy(logits[answer_positions], answer_token_ids)
 
 | 实验 | tmux | GPU | 状态 | 结果 |
 |------|------|-----|------|------|
-| zero-shot 评测 (200条) | eval-baseline | 卡 0 | 🟡 等模型下载 | - |
-| VoCo-only overfit (10条) | voco-overfit | 卡 1 | 🟡 等模型下载 | - |
+| zero-shot 评测 (200条) | eval-baseline | 卡 0 | ✅ 完成 | logit=82%, gen=72.5%, nll=70% |
+| VoCo-only overfit (10条) | voco-overfit | 卡 1 | ✅ 完成 | loss 8.65→0.01, 33GB显存 |
+| VoCo-only 10K (K_seg=8) | voco-10k | 卡 1 | 🟢 训练中 | ~3.5s/step, ~9h/epoch |
+
+### 关键发现
+
+1. **旧评测低估 baseline**：旧方法 36.6% → 新 logit 方法 82%（差距来自全词表 argmax vs ABCD token 比较）
+2. **VoCo-only 能 overfit**：28K 参数（冻结 LLM）loss 8.65→0.01，说明纯 voco 压缩可行
+3. **A40 显存足够**：overfit 用 33GB / 48GB，有余量
+4. **模型需从 modelscope 下载**：jiagpu8 无法访问 huggingface.co，用 modelscope 镜像
+5. **模型路径**: `/nvmessd/lifanhong/.cache/modelscope/Qwen/Qwen2___5-VL-7B-Instruct`
