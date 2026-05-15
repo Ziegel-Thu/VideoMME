@@ -81,6 +81,38 @@ def get_inner(base_model):
     return m
 
 
+def lm_forward_kv(inner, tokens, device):
+    """单次 LLM forward → 返回 pooled KV cache (per-layer mean)。
+
+    Args:
+        tokens: (N, D) — vision/compressed tokens
+    Returns:
+        pooled_kv: (n_layers, D) — 每层 KV 的 mean pool
+    """
+    t_input = tokens.unsqueeze(0)
+    t_len = tokens.shape[0]
+    t_pos = torch.arange(t_len, device=device)
+    t_pos_ids = t_pos.view(1, 1, -1).expand(3, 1, -1)
+    t_attn = torch.ones(1, t_len, dtype=torch.long, device=device)
+
+    out = inner.model(
+        inputs_embeds=t_input,
+        attention_mask=t_attn,
+        position_ids=t_pos_ids,
+        use_cache=True,
+    )
+    kv_cache = out.past_key_values
+
+    pooled = []
+    for layer_kv in kv_cache:
+        k, v = layer_kv  # each (1, n_heads, N, head_dim)
+        # mean pool over tokens, concat K and V
+        k_pool = k.squeeze(0).mean(dim=1).mean(dim=0)  # (head_dim,)
+        v_pool = v.squeeze(0).mean(dim=1).mean(dim=0)
+        pooled.append(torch.cat([k_pool, v_pool]))      # (2*head_dim,)
+    return torch.stack(pooled)  # (n_layers, 2*head_dim)
+
+
 def student_forward_segment(inner, compressed, q_embeds, device):
     """Student forward: [compressed (K), Q (Q_len)] → Q 位置 hidden。
 
@@ -139,6 +171,7 @@ def train(args):
     log("Cross-Attention 压缩模块蒸馏训练")
     log(f"  GPU 数量: {world_size}")
     log(f"  K_seg: {args.K_seg}, n_layers: {args.n_layers}")
+    log(f"  loss_type: {args.loss_type}")
     log(f"  lr: {args.lr}, epochs: {args.epochs}")
     log(f"  save_steps: {args.save_steps}")
     log(f"  cache_dir: {args.cache_dir}")
@@ -226,24 +259,37 @@ def train(args):
                 sample_loss = 0.0
                 n_segs = 0
 
-                # 逐段: compress → student LLM forward → MSE with teacher
+                # 逐段: compress → loss
                 for seg_vision, teacher_target in zip(segments, teacher_targets):
                     seg_vision = seg_vision.to(device, dtype=torch.bfloat16)
-                    teacher_target = teacher_target.to(device, dtype=torch.bfloat16)
                     q_emb = q_embeds.to(device, dtype=torch.bfloat16)
 
                     # Compress: (V, D) → (K, D)
                     compressed = compressor(seg_vision)
 
-                    # Student LLM forward
-                    student_q_hidden = student_forward_segment(
-                        inner, compressed, q_emb, device,
-                    )
+                    loss = torch.tensor(0.0, device=device)
 
-                    # Loss
-                    loss = nn.functional.mse_loss(
-                        student_q_hidden, teacher_target.detach(),
-                    )
+                    if args.loss_type in ("B", "BD"):
+                        teacher_target = teacher_target.to(device, dtype=torch.bfloat16)
+                        student_q_hidden = student_forward_segment(
+                            inner, compressed, q_emb, device,
+                        )
+                        loss_b = nn.functional.mse_loss(
+                            student_q_hidden, teacher_target.detach(),
+                        )
+                        loss = loss + loss_b
+
+                    if args.loss_type in ("D", "BD"):
+                        # Teacher KV: 现场算（no_grad）
+                        with torch.no_grad():
+                            teacher_kv = lm_forward_kv(
+                                inner, seg_vision.detach(), device,
+                            )
+                        # Student KV
+                        student_kv = lm_forward_kv(inner, compressed, device)
+                        loss_d = nn.functional.mse_loss(student_kv, teacher_kv)
+                        loss = loss + loss_d
+
                     loss.backward()
                     sample_loss += loss.item()
                     n_segs += 1
@@ -344,5 +390,8 @@ if __name__ == "__main__":
     parser.add_argument("--save_steps", type=int, default=500)
     parser.add_argument("--resume_from", type=str, default=None,
                         help="从 checkpoint 恢复训练")
+    parser.add_argument("--loss_type", type=str, default="B",
+                        choices=["B", "D", "BD"],
+                        help="蒸馏 loss 类型: B=attn output, D=KV cache, BD=两者")
     args = parser.parse_args()
     train(args)
