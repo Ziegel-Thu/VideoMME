@@ -29,7 +29,9 @@ import tempfile
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.distributed as dist
 from torch.utils.data import DataLoader
+from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
 
 from model import setup_voco_model, get_video_embeds, split_into_segments
@@ -209,16 +211,33 @@ def distill_kv_loss(inner, vision_seg, voco_embeds, device):
 # ============================================================
 
 def train(args):
-    device = torch.device("cuda")
+    # 分布式初始化
+    if "LOCAL_RANK" in os.environ:
+        local_rank = int(os.environ["LOCAL_RANK"])
+        world_size = int(os.environ["WORLD_SIZE"])
+        import datetime as _dt
+        dist.init_process_group("nccl", timeout=_dt.timedelta(hours=2))
+        torch.cuda.set_device(local_rank)
+    else:
+        local_rank = 0
+        world_size = 1
 
-    print("=" * 60)
-    print("方案 D: KV Cache 匹配蒸馏")
-    print(f"  K_seg: {args.K_seg}, frames/seg: {args.frames_per_segment}")
-    print(f"  fps: {args.fps}, max_frames: {args.max_frames}")
-    print(f"  lr: {args.lr}, epochs: {args.epochs}")
-    print(f"  save_steps: {args.save_steps}")
-    print(f"  model: {args.model_path}")
-    print("=" * 60)
+    device = torch.device(f"cuda:{local_rank}")
+    is_main = (local_rank == 0)
+
+    def log(msg):
+        if is_main:
+            print(msg)
+
+    log("=" * 60)
+    log("方案 D: KV Cache 匹配蒸馏")
+    log(f"  GPU 数量: {world_size}")
+    log(f"  K_seg: {args.K_seg}, frames/seg: {args.frames_per_segment}")
+    log(f"  fps: {args.fps}, max_frames: {args.max_frames}")
+    log(f"  lr: {args.lr}, epochs: {args.epochs}")
+    log(f"  save_steps: {args.save_steps}")
+    log(f"  model: {args.model_path}")
+    log("=" * 60)
 
     # 加载模型（冻结 LLM，只训 voco_embeds）
     model, processor, tokenizer = setup_voco_model(
@@ -231,10 +250,13 @@ def train(args):
 
     # 确认可训练参数
     trainable = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
-    print(f"  可训练参数:")
+    log(f"  可训练参数:")
     for n, p in trainable:
-        print(f"    {n}: {p.shape}")
+        log(f"    {n}: {p.shape}")
     assert len(trainable) == 1 and "voco_embeds" in trainable[0][0]
+
+    if world_size > 1:
+        dist.broadcast(model.voco_embeds.data, src=0)
 
     base = model.base
     inner = get_inner(base)
@@ -245,7 +267,7 @@ def train(args):
         args.data_path, video_dirs, max_samples=args.max_samples,
     )
     if len(dataset) == 0:
-        print("⚠️ 数据集为空，退出")
+        log("⚠️ 数据集为空，退出")
         return
 
     def collate(batch):
@@ -256,9 +278,12 @@ def train(args):
             max_frames=args.max_frames,
         )
 
-    loader = DataLoader(dataset, batch_size=1, shuffle=True, collate_fn=collate)
+    train_sampler = DistributedSampler(dataset, shuffle=True) if world_size > 1 else None
+    loader = DataLoader(dataset, batch_size=1,
+                        sampler=train_sampler,
+                        shuffle=(train_sampler is None),
+                        collate_fn=collate)
 
-    # 优化器（只有 voco_embeds）
     optimizer = torch.optim.AdamW(
         [model.voco_embeds], lr=args.lr, weight_decay=0.01,
     )
@@ -268,10 +293,13 @@ def train(args):
 
     for epoch in range(args.epochs):
         model.train()
+        if train_sampler:
+            train_sampler.set_epoch(epoch)
         epoch_loss = 0.0
         epoch_n = 0
 
-        pbar = tqdm(loader, desc=f"Epoch {epoch + 1}/{args.epochs}")
+        pbar = tqdm(loader, desc=f"Epoch {epoch + 1}/{args.epochs}",
+                    disable=not is_main)
         for batch_data in pbar:
             if batch_data is None:
                 continue
@@ -293,6 +321,10 @@ def train(args):
                     sample_loss += seg_loss.item()
                     n_segs += 1
 
+                if world_size > 1 and model.voco_embeds.grad is not None:
+                    dist.all_reduce(model.voco_embeds.grad, op=dist.ReduceOp.SUM)
+                    model.voco_embeds.grad.div_(world_size)
+
                 torch.nn.utils.clip_grad_norm_([model.voco_embeds], 1.0)
                 optimizer.step()
 
@@ -300,26 +332,30 @@ def train(args):
                 epoch_loss += sample_loss
                 epoch_n += n_segs
 
-                pbar.set_postfix(
-                    loss=f"{avg_seg_loss:.4f}", segs=n_segs, step=global_step,
-                )
-                print(f"  [step {global_step}] loss={avg_seg_loss:.4f} "
-                      f"(n_segs={n_segs})")
+                if is_main:
+                    pbar.set_postfix(
+                        loss=f"{avg_seg_loss:.4f}", segs=n_segs, step=global_step,
+                    )
+                    print(f"  [step {global_step}] loss={avg_seg_loss:.4f} "
+                          f"(n_segs={n_segs})")
 
             except RuntimeError as e:
                 if "out of memory" in str(e):
-                    print(f"  [OOM] step {global_step}，跳过该样本")
+                    if is_main:
+                        print(f"  [OOM] step {global_step}，跳过该样本")
                     torch.cuda.empty_cache()
                 else:
-                    print(f"  [错误] step {global_step}: {e}")
+                    if is_main:
+                        print(f"  [错误] step {global_step}: {e}")
                 continue
 
             except Exception as e:
-                print(f"  [错误] step {global_step}: {e}")
+                if is_main:
+                    print(f"  [错误] step {global_step}: {e}")
                 continue
 
-            # 定期保存
-            if args.save_steps > 0 and global_step % args.save_steps == 0:
+            # 定期保存（只 rank 0）
+            if args.save_steps > 0 and global_step % args.save_steps == 0 and is_main:
                 ckpt_path = os.path.join(
                     args.output_dir,
                     f"voco_embeds_e{epoch+1}_s{global_step}.pt",
@@ -334,10 +370,11 @@ def train(args):
 
         # Epoch 结束
         avg_epoch_loss = epoch_loss / max(epoch_n, 1)
-        print(f"  Epoch {epoch + 1} 完成: avg_loss={avg_epoch_loss:.4f} "
-              f"(total_segs={epoch_n})")
+        log(f"  Epoch {epoch + 1} 完成: avg_loss={avg_epoch_loss:.4f} "
+            f"(total_segs={epoch_n})")
 
-        ckpt_path = os.path.join(
+        if is_main:
+            ckpt_path = os.path.join(
             args.output_dir, f"voco_embeds_epoch{epoch+1}.pt",
         )
         torch.save({
@@ -348,7 +385,9 @@ def train(args):
         }, ckpt_path)
         print(f"  💾 epoch checkpoint → {ckpt_path}")
 
-    print("\n训练完成.")
+    log("\n训练完成.")
+    if dist.is_initialized():
+        dist.destroy_process_group()
 
 
 if __name__ == "__main__":
