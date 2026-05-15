@@ -281,8 +281,16 @@ def train(args):
 
     os.makedirs(args.output_dir, exist_ok=True)
     global_step = 0
+    start_epoch = 0
 
-    for epoch in range(args.epochs):
+    # 从 checkpoint 恢复
+    if args.resume_from:
+        ckpt = torch.load(args.resume_from, map_location="cpu")
+        model.voco_embeds.data.copy_(ckpt["voco_embeds"].to(device))
+        start_epoch = ckpt.get("epoch", 0)
+        log(f"  从 {args.resume_from} 恢复，start_epoch={start_epoch}")
+
+    for epoch in range(start_epoch, args.epochs):
         model.train()
         if train_sampler:
             train_sampler.set_epoch(epoch)
@@ -368,15 +376,17 @@ def train(args):
 
         if is_main:
             ckpt_path = os.path.join(
-            args.output_dir, f"voco_embeds_epoch{epoch+1}.pt",
-        )
-        torch.save({
-            "voco_embeds": model.voco_embeds.detach().cpu(),
-            "epoch": epoch + 1,
-            "train_loss": avg_epoch_loss,
-            "K_seg": args.K_seg,
-        }, ckpt_path)
-        print(f"  💾 epoch checkpoint → {ckpt_path}")
+                args.output_dir, f"voco_embeds_epoch{epoch+1}.pt",
+            )
+            torch.save({
+                "voco_embeds": model.voco_embeds.detach().cpu(),
+                "epoch": epoch + 1,
+                "train_loss": avg_epoch_loss,
+                "K_seg": args.K_seg,
+            }, ckpt_path)
+            print(f"  💾 epoch checkpoint → {ckpt_path}")
+        if dist.is_initialized():
+            dist.barrier()
 
     log("\n训练完成.")
     if dist.is_initialized():
@@ -402,5 +412,7 @@ if __name__ == "__main__":
     parser.add_argument("--model_path", type=str,
                         default="Qwen/Qwen2.5-VL-7B-Instruct",
                         help="模型路径")
+    parser.add_argument("--resume_from", type=str, default=None,
+                        help="从 checkpoint 恢复训练")
     args = parser.parse_args()
     train(args)
