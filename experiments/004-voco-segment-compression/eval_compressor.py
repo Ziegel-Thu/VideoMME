@@ -26,7 +26,7 @@ from tqdm import tqdm
 from PIL import Image
 import decord
 
-from compressor import VoCoCompressor
+from compressor import InterSegmentAttention, VoCoCompressor
 from model import get_video_embeds, split_into_segments
 from data import extract_frames
 
@@ -62,15 +62,29 @@ def eval_compressor(args):
     ckpt = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
     K_seg = ckpt.get("K_seg", 8)
     n_layers = ckpt.get("n_layers", 1)
-    print(f"加载 compressor: K={K_seg}, n_layers={n_layers}")
+    inter_layers = ckpt.get("inter_layers", 0)
+    print(
+        f"加载 compressor: K={K_seg}, n_layers={n_layers}, "
+        f"inter_layers={inter_layers}"
+    )
     print(f"  train_loss={ckpt.get('train_loss', '?')}")
 
     compressor = VoCoCompressor(K=K_seg, dim=3584, n_layers=n_layers)
     compressor.load_state_dict(ckpt["compressor"])
     compressor = compressor.to(device, dtype=dtype)
     compressor.eval()
+    inter_segment = None
+    if inter_layers > 0:
+        inter_segment = InterSegmentAttention(
+            dim=3584, n_layers=inter_layers,
+        )
+        inter_segment.load_state_dict(ckpt["inter_segment"])
+        inter_segment = inter_segment.to(device, dtype=dtype)
+        inter_segment.eval()
 
     n_params = compressor.num_params()
+    if inter_segment is not None:
+        n_params += inter_segment.num_params()
     print(f"  Compressor 参数: {n_params:,}")
 
     # 数据
@@ -157,6 +171,10 @@ def eval_compressor(args):
                 for seg in segments:
                     compressed = compressor(seg)  # (K, D)
                     all_compressed.append(compressed)
+                if inter_segment is not None:
+                    segment_lengths = [tokens.shape[0] for tokens in all_compressed]
+                    all_tokens = torch.cat(all_compressed, dim=0)
+                    all_compressed = inter_segment(all_tokens, segment_lengths)
 
                 # 拼接所有段的压缩 tokens
                 all_comp = torch.cat(all_compressed, dim=0)  # (n_seg*K, D)
@@ -213,7 +231,7 @@ def eval_compressor(args):
 
     acc = correct / max(total, 1) * 100
     print(f"\n  准确率: {acc:.2f}% ({correct}/{total})")
-    print(f"  K={K_seg}, n_layers={n_layers}")
+    print(f"  K={K_seg}, n_layers={n_layers}, inter_layers={inter_layers}")
 
 
 if __name__ == "__main__":

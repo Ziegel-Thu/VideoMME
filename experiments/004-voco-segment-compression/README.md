@@ -248,6 +248,35 @@ PY
 - `train_compressor.py`: 支持 `loss_type=B|D|BD`
 - `eval_compressor.py`: 评测时只使用 compressed tokens，不回注 dense vision
 
+### 段间 Attention 扩展（2026-05-17）
+
+为验证“所有段的 compressed tokens 先交互一次再进入 LLM”路线，新增可选段间 self-attention：
+
+- `InterSegmentAttention`: 对所有段压缩后的 tokens 做 self-attention + FFN，再按段拆回。
+- `train_compressor.py --inter_layers N`: `N=0` 保持原行为；`N>0` 启用段间 attention。
+- `eval_compressor.py` 会从 checkpoint 读取 `inter_layers` 并加载 `inter_segment` 权重。
+- 修复 `max_samples` sanity 时仍扫描全部 shard 的问题：达到 `max_samples` 后停止继续加载后续 shard。
+- 修复段间 attention 训练的 autograd 问题：同一样本的多段 loss 先累加，再只 `backward()` 一次，避免共享 graph 被重复 backward。
+
+jiagpu4 10K sanity：
+
+```bash
+CUDA_VISIBLE_DEVICES=4,5,6,7 conda run -n video torchrun --nproc_per_node=4 train_compressor.py \
+  --cache_dir /nvmessd/lifanhong/video/teacher_cache_10k_sharded_v2 \
+  --output_dir /nvmessd/lifanhong/video/outputs_compressor_10k_crossattn_sanity3 \
+  --model_path /nvmessd/lifanhong/.cache/modelscope/Qwen/Qwen2___5-VL-7B-Instruct \
+  --max_samples 4 \
+  --K_seg 8 \
+  --n_layers 1 \
+  --inter_layers 1 \
+  --loss_type B \
+  --lr 1e-4 \
+  --epochs 1 \
+  --save_steps 0
+```
+
+结果：`avg_loss=8.138393`，`total_segs=7`，checkpoint 写到 `/nvmessd/lifanhong/video/outputs_compressor_10k_crossattn_sanity3/compressor_epoch1.pt`。jiagpu4 的 10K shard cache 已同步完成：10 个 shard，228G。
+
 ### Compressor 10K / 200 条 test 结果
 
 以下结果均在**相同条件**下评测：`--video_dirs=0_30_s_academic_v0_1`，`--max_samples 200`，`visual_qa_v3_0_60_test.jsonl`。

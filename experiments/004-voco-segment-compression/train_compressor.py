@@ -31,7 +31,7 @@ from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
 
-from compressor import VoCoCompressor
+from compressor import InterSegmentAttention, VoCoCompressor
 
 
 # ============================================================
@@ -57,9 +57,10 @@ class TeacherCacheDataset(Dataset):
             shard_samples = torch.load(shard_path, map_location="cpu", weights_only=False)
             for item_idx in range(len(shard_samples)):
                 self.sample_index.append((shard_path, item_idx))
-
-        if max_samples:
-            self.sample_index = self.sample_index[:max_samples]
+                if max_samples and len(self.sample_index) >= max_samples:
+                    break
+            if max_samples and len(self.sample_index) >= max_samples:
+                break
         print(f"TeacherCacheDataset: {len(self.sample_index)} 个样本 from {self.cache_dir}")
 
     def __len__(self):
@@ -174,6 +175,26 @@ def student_forward_segment(inner, compressed, q_embeds, device):
     return s_hidden[-Q_len:]         # (Q_len, D)
 
 
+def compress_segments(compressor, inter_segment, segments):
+    """逐段压缩后，可选地让所有段 compressed tokens 做一次全局交互。"""
+    compressed_segments = [compressor(seg) for seg in segments]
+    if inter_segment is None:
+        return compressed_segments
+
+    segment_lengths = [tokens.shape[0] for tokens in compressed_segments]
+    all_tokens = torch.cat(compressed_segments, dim=0)
+    return inter_segment(all_tokens, segment_lengths)
+
+
+def accumulate_segment_losses(losses):
+    """把同一样本的多段 loss 合并，保证共享计算图只 backward 一次。"""
+    if not losses:
+        return None, 0.0, 0
+    total_loss = torch.stack(losses).sum()
+    loss_value = sum(loss.detach().float().item() for loss in losses)
+    return total_loss, loss_value, len(losses)
+
+
 # ============================================================
 # 训练循环
 # ============================================================
@@ -201,6 +222,7 @@ def train(args):
     log("Cross-Attention 压缩模块蒸馏训练")
     log(f"  GPU 数量: {world_size}")
     log(f"  K_seg: {args.K_seg}, n_layers: {args.n_layers}")
+    log(f"  inter_layers: {args.inter_layers}")
     log(f"  loss_type: {args.loss_type}")
     log(f"  lr: {args.lr}, epochs: {args.epochs}")
     log(f"  save_steps: {args.save_steps}")
@@ -225,13 +247,25 @@ def train(args):
         K=args.K_seg, dim=3584,
         n_heads=args.n_heads, n_layers=args.n_layers,
     ).to(device, dtype=torch.bfloat16)
+    inter_segment = None
+    if args.inter_layers > 0:
+        inter_segment = InterSegmentAttention(
+            dim=3584, n_heads=args.n_heads,
+            n_layers=args.inter_layers,
+        ).to(device, dtype=torch.bfloat16)
+
     n_comp = compressor.num_params()
+    n_inter = inter_segment.num_params() if inter_segment is not None else 0
     log(f"  Compressor: {n_comp:,} 参数 ({args.n_layers} 层)")
+    log(f"  Inter-segment attention: {n_inter:,} 参数 ({args.inter_layers} 层)")
 
     # 多卡同步 compressor 初始权重
     if world_size > 1:
         for p in compressor.parameters():
             dist.broadcast(p.data, src=0)
+        if inter_segment is not None:
+            for p in inter_segment.parameters():
+                dist.broadcast(p.data, src=0)
 
     # 数据集
     dataset = TeacherCacheDataset(args.cache_dir, max_samples=args.max_samples)
@@ -249,8 +283,11 @@ def train(args):
     )
 
     # 优化器
+    trainable_params = list(compressor.parameters())
+    if inter_segment is not None:
+        trainable_params += list(inter_segment.parameters())
     optimizer = torch.optim.AdamW(
-        compressor.parameters(), lr=args.lr, weight_decay=0.01,
+        trainable_params, lr=args.lr, weight_decay=0.01,
     )
 
     os.makedirs(args.output_dir, exist_ok=True)
@@ -262,6 +299,8 @@ def train(args):
         ckpt = torch.load(args.resume_from, map_location="cpu",
                           weights_only=False)
         compressor.load_state_dict(ckpt["compressor"])
+        if inter_segment is not None and "inter_segment" in ckpt:
+            inter_segment.load_state_dict(ckpt["inter_segment"])
         start_epoch = ckpt.get("epoch", 0)
         if "optimizer" in ckpt:
             optimizer.load_state_dict(ckpt["optimizer"])
@@ -269,6 +308,8 @@ def train(args):
 
     for epoch in range(start_epoch, args.epochs):
         compressor.train()
+        if inter_segment is not None:
+            inter_segment.train()
         if train_sampler:
             train_sampler.set_epoch(epoch)
         epoch_loss = 0.0
@@ -290,14 +331,20 @@ def train(args):
                 sample_loss = 0.0
                 n_segs = 0
 
-                # 逐段: compress → loss
-                for seg_vision, teacher_target in zip(segments, teacher_targets):
-                    seg_vision = seg_vision.to(device, dtype=torch.bfloat16)
-                    q_emb = q_embeds.to(device, dtype=torch.bfloat16)
+                device_segments = [
+                    seg.to(device, dtype=torch.bfloat16)
+                    for seg in segments
+                ]
+                q_emb = q_embeds.to(device, dtype=torch.bfloat16)
+                compressed_segments = compress_segments(
+                    compressor, inter_segment, device_segments,
+                )
+                segment_losses = []
 
-                    # Compress: (V, D) → (K, D)
-                    compressed = compressor(seg_vision)
-
+                # 逐段: loss
+                for seg_vision, compressed, teacher_target in zip(
+                    device_segments, compressed_segments, teacher_targets,
+                ):
                     loss = torch.tensor(0.0, device=device)
 
                     if args.loss_type in ("B", "BD"):
@@ -321,18 +368,23 @@ def train(args):
                         loss_d = nn.functional.mse_loss(student_kv, teacher_kv)
                         loss = loss + loss_d
 
-                    loss.backward()
-                    sample_loss += loss.item()
-                    n_segs += 1
+                    segment_losses.append(loss)
+
+                total_loss, sample_loss, n_segs = accumulate_segment_losses(
+                    segment_losses,
+                )
+                if total_loss is None:
+                    continue
+                total_loss.backward()
 
                 # 梯度同步
                 if world_size > 1:
-                    for p in compressor.parameters():
+                    for p in trainable_params:
                         if p.grad is not None:
                             dist.all_reduce(p.grad, op=dist.ReduceOp.SUM)
                             p.grad.div_(world_size)
 
-                torch.nn.utils.clip_grad_norm_(compressor.parameters(), 1.0)
+                torch.nn.utils.clip_grad_norm_(trainable_params, 1.0)
                 optimizer.step()
 
                 avg_seg_loss = sample_loss / max(n_segs, 1)
@@ -365,11 +417,16 @@ def train(args):
                 )
                 torch.save({
                     "compressor": compressor.state_dict(),
+                    "inter_segment": (
+                        inter_segment.state_dict()
+                        if inter_segment is not None else None
+                    ),
                     "optimizer": optimizer.state_dict(),
                     "epoch": epoch + 1,
                     "step": global_step,
                     "K_seg": args.K_seg,
                     "n_layers": args.n_layers,
+                    "inter_layers": args.inter_layers,
                 }, ckpt_path)
                 print(f"  💾 checkpoint → {ckpt_path}")
 
@@ -384,11 +441,16 @@ def train(args):
             )
             torch.save({
                 "compressor": compressor.state_dict(),
+                "inter_segment": (
+                    inter_segment.state_dict()
+                    if inter_segment is not None else None
+                ),
                 "optimizer": optimizer.state_dict(),
                 "epoch": epoch + 1,
                 "train_loss": avg_epoch_loss,
                 "K_seg": args.K_seg,
                 "n_layers": args.n_layers,
+                "inter_layers": args.inter_layers,
             }, ckpt_path)
             print(f"  💾 epoch checkpoint → {ckpt_path}")
         if dist.is_initialized():
@@ -414,6 +476,8 @@ if __name__ == "__main__":
                         help="每段压缩 token 数")
     parser.add_argument("--n_layers", type=int, default=1,
                         help="Cross-Attention 层数")
+    parser.add_argument("--inter_layers", type=int, default=0,
+                        help="段间 attention 层数；0 表示关闭")
     parser.add_argument("--n_heads", type=int, default=8,
                         help="Attention heads 数")
     parser.add_argument("--lr", type=float, default=1e-4)
