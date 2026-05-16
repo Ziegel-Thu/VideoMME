@@ -68,6 +68,7 @@ loss = CrossEntropy(logits[answer_positions], answer_token_ids)
 - **训练/评测只允许从本地 SSD 读取**：路径必须在 `/nvmessd/...`
 - **禁止直接从 NFS 读取 teacher cache**：`train_compressor.py` 会显式拒绝 `/beegfs_hdd/...`
 - **旧的按样本 `.pt` 小文件 cache 已废弃**：不要再用 `glob + open` 方式读上万个小文件
+- **提取支持安全 resume**：`extract_teacher.py --resume` 用 `global_idx` 跳过已完成样本，`ShardWriter` 从每个 rank 现有最大 shard 编号之后继续写，避免重启覆盖旧 shard
 
 ### 生成 shard cache
 
@@ -257,6 +258,7 @@ PY
 - `eval_compressor.py` 会从 checkpoint 读取 `inter_layers` 并加载 `inter_segment` 权重。
 - 修复 `max_samples` sanity 时仍扫描全部 shard 的问题：达到 `max_samples` 后停止继续加载后续 shard。
 - 修复段间 attention 训练的 autograd 问题：同一样本的多段 loss 先累加，再只 `backward()` 一次，避免共享 graph 被重复 backward。
+- 修复 step checkpoint 恢复逻辑：`--resume_from compressor_e*_s*.pt` 会回到当前 epoch 并跳过已完成 step，而不是误判为整轮已完成。
 
 jiagpu4 10K sanity：
 
@@ -276,6 +278,30 @@ CUDA_VISIBLE_DEVICES=4,5,6,7 conda run -n video torchrun --nproc_per_node=4 trai
 ```
 
 结果：`avg_loss=8.138393`，`total_segs=7`，checkpoint 写到 `/nvmessd/lifanhong/video/outputs_compressor_10k_crossattn_sanity3/compressor_epoch1.pt`。jiagpu4 的 10K shard cache 已同步完成：10 个 shard，228G。
+
+jiagpu4 10K 正式训练（4 卡，固定 `CUDA_VISIBLE_DEVICES=4,5,6,7`）：
+
+```bash
+CUDA_VISIBLE_DEVICES=4,5,6,7 conda run --no-capture-output -n video torchrun --nproc_per_node=4 train_compressor.py \
+  --cache_dir /nvmessd/lifanhong/video/teacher_cache_10k_sharded_v2 \
+  --output_dir /nvmessd/lifanhong/video/outputs_compressor_10k_crossattn_4gpu \
+  --model_path /nvmessd/lifanhong/.cache/modelscope/Qwen/Qwen2___5-VL-7B-Instruct \
+  --K_seg 8 \
+  --n_layers 1 \
+  --inter_layers 1 \
+  --loss_type B \
+  --lr 1e-4 \
+  --epochs 3 \
+  --save_steps 500
+```
+
+训练已完成，日志 `/nvmessd/lifanhong/video/log_train_compressor_10k_crossattn_4gpu.txt`：
+
+| Epoch | avg_loss | total_segs | checkpoint |
+|-------|---------:|-----------:|------------|
+| 1 | 1.228753 | 6638 | `compressor_epoch1.pt` |
+| 2 | 1.135115 | 6638 | `compressor_epoch2.pt` |
+| 3 | 1.047390 | 6638 | `compressor_epoch3.pt` |
 
 ### Compressor 10K / 200 条 test 结果
 

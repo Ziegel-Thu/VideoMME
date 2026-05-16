@@ -9,6 +9,7 @@ from compressor import InterSegmentAttention
 from train_compressor import (
     TeacherCacheDataset,
     accumulate_segment_losses,
+    compute_resume_position,
     compress_segments,
     validate_cache_dir,
 )
@@ -161,6 +162,35 @@ class InterSegmentAttentionTests(unittest.TestCase):
         self.assertEqual(n_segs, 2)
         self.assertGreater(loss_value, 0.0)
         self.assertIsNotNone(tokens.grad)
+
+
+class ResumePositionTests(unittest.TestCase):
+    def test_epoch_checkpoint_resumes_from_next_epoch(self):
+        resume = compute_resume_position(
+            ckpt_epoch=2, ckpt_step=None, steps_per_epoch=2474,
+        )
+
+        self.assertEqual(resume["start_epoch"], 2)
+        self.assertEqual(resume["skip_steps"], 0)
+        self.assertEqual(resume["initial_global_step"], 4948)
+
+    def test_step_checkpoint_resumes_inside_current_epoch(self):
+        resume = compute_resume_position(
+            ckpt_epoch=3, ckpt_step=5500, steps_per_epoch=2474,
+        )
+
+        self.assertEqual(resume["start_epoch"], 2)
+        self.assertEqual(resume["skip_steps"], 552)
+        self.assertEqual(resume["initial_global_step"], 4948)
+
+    def test_first_epoch_step_checkpoint_resumes_inside_first_epoch(self):
+        resume = compute_resume_position(
+            ckpt_epoch=1, ckpt_step=500, steps_per_epoch=2474,
+        )
+
+        self.assertEqual(resume["start_epoch"], 0)
+        self.assertEqual(resume["skip_steps"], 500)
+        self.assertEqual(resume["initial_global_step"], 0)
 
 
 if __name__ == "__main__":

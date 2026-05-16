@@ -47,8 +47,22 @@ class ShardWriter:
         self.shard_size = shard_size
         self.rank = rank
         self.buffer = []
-        self.shard_idx = 0
         os.makedirs(output_dir, exist_ok=True)
+        self.shard_idx = self._next_shard_idx()
+
+    def _next_shard_idx(self):
+        pattern = os.path.join(
+            self.output_dir, f"teacher_shard_rank{self.rank}_*.pt",
+        )
+        max_idx = -1
+        for shard_path in glob.glob(pattern):
+            name = os.path.basename(shard_path)
+            try:
+                idx_text = name.rsplit("_", 1)[1].split(".", 1)[0]
+                max_idx = max(max_idx, int(idx_text))
+            except (IndexError, ValueError):
+                continue
+        return max_idx + 1
 
     def add(self, sample):
         self.buffer.append(sample)

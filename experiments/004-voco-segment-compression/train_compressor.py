@@ -195,6 +195,35 @@ def accumulate_segment_losses(losses):
     return total_loss, loss_value, len(losses)
 
 
+def compute_resume_position(ckpt_epoch, ckpt_step, steps_per_epoch):
+    """把 checkpoint 的 1-based epoch/global step 转成训练循环恢复位置。"""
+    if steps_per_epoch <= 0:
+        raise ValueError("steps_per_epoch 必须大于 0")
+
+    if ckpt_step is None:
+        start_epoch = int(ckpt_epoch)
+        return {
+            "start_epoch": start_epoch,
+            "skip_steps": 0,
+            "initial_global_step": start_epoch * steps_per_epoch,
+        }
+
+    current_epoch = max(int(ckpt_epoch) - 1, 0)
+    epoch_start_step = current_epoch * steps_per_epoch
+    skip_steps = max(int(ckpt_step) - epoch_start_step, 0)
+    if skip_steps >= steps_per_epoch:
+        start_epoch = current_epoch + (skip_steps // steps_per_epoch)
+        skip_steps = skip_steps % steps_per_epoch
+    else:
+        start_epoch = current_epoch
+
+    return {
+        "start_epoch": start_epoch,
+        "skip_steps": skip_steps,
+        "initial_global_step": start_epoch * steps_per_epoch,
+    }
+
+
 # ============================================================
 # 训练循环
 # ============================================================
@@ -293,6 +322,7 @@ def train(args):
     os.makedirs(args.output_dir, exist_ok=True)
     global_step = 0
     start_epoch = 0
+    skip_steps = 0
 
     # 从 checkpoint 恢复
     if args.resume_from:
@@ -301,10 +331,20 @@ def train(args):
         compressor.load_state_dict(ckpt["compressor"])
         if inter_segment is not None and "inter_segment" in ckpt:
             inter_segment.load_state_dict(ckpt["inter_segment"])
-        start_epoch = ckpt.get("epoch", 0)
         if "optimizer" in ckpt:
             optimizer.load_state_dict(ckpt["optimizer"])
-        log(f"  从 {args.resume_from} 恢复，start_epoch={start_epoch}")
+        resume_pos = compute_resume_position(
+            ckpt_epoch=ckpt.get("epoch", 0),
+            ckpt_step=ckpt.get("step"),
+            steps_per_epoch=len(loader),
+        )
+        start_epoch = resume_pos["start_epoch"]
+        skip_steps = resume_pos["skip_steps"]
+        global_step = resume_pos["initial_global_step"]
+        log(
+            f"  从 {args.resume_from} 恢复，start_epoch={start_epoch}, "
+            f"skip_steps={skip_steps}, global_step={global_step}"
+        )
 
     for epoch in range(start_epoch, args.epochs):
         compressor.train()
@@ -317,6 +357,7 @@ def train(args):
 
         pbar = tqdm(loader, desc=f"Epoch {epoch + 1}/{args.epochs}",
                     disable=not is_main)
+        local_step = 0
         for sample in pbar:
             if sample is None:
                 continue
@@ -324,7 +365,10 @@ def train(args):
             segments = sample["segments"]       # list of (V_i, D) tensors
             q_embeds = sample["q_embeds"]       # (Q_len, D)
             teacher_targets = sample["teacher_q_hidden"]  # list of (Q_len, D)
+            local_step += 1
             global_step += 1
+            if epoch == start_epoch and local_step <= skip_steps:
+                continue
 
             try:
                 optimizer.zero_grad()
