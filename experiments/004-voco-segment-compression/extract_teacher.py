@@ -166,6 +166,8 @@ def main(args):
                 item["_resolved_video"] = video_index[vname]
                 samples.append(item)
 
+    if args.skip_samples:
+        samples = samples[args.skip_samples:]
     if args.max_samples:
         samples = samples[:args.max_samples]
 
@@ -353,6 +355,8 @@ if __name__ == "__main__":
     parser.add_argument("--model_path", type=str,
                         default="Qwen/Qwen2.5-VL-7B-Instruct")
     parser.add_argument("--max_samples", type=int, default=None)
+    parser.add_argument("--skip_samples", type=int, default=None,
+                        help="跳过前 N 条样本，用于多机分段提取")
     parser.add_argument("--fps", type=float, default=1.0)
     parser.add_argument("--frames_per_segment", type=int, default=2)
     parser.add_argument("--max_frames", type=int, default=30)
