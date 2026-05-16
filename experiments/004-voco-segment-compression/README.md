@@ -100,6 +100,72 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 torchrun --nproc_per_node=4 train_compressor.py \
   --loss_type B
 ```
 
+## 0-60 数据准备状态（jiagpu8 SSD）
+
+`visual_qa_v3_0_60_{train,val,test}.jsonl` 里的样本数是 **MCQ 题目数**，不是视频数。当前 train split：
+
+| split | MCQ | 去重视频 | 组成 |
+|------|-----:|---------:|------|
+| train | 110,026 | 6,426 | 30_60 academic: 71,181；0_30 academic: 38,845 |
+| val | 5,102 | 379 | 30_60 academic: 4,174；0_30 academic: 928 |
+| test | 10,103 | 747 | 30_60 academic: 8,268；0_30 academic: 1,835 |
+
+### 视频目录
+
+必须都在本地 SSD，不能从 NFS 直接读视频或 teacher cache：
+
+```bash
+/nvmessd/lifanhong/video/llava-video/0_30_s_academic_v0_1
+/nvmessd/lifanhong/video/llava-video/30_60_s_academic_v0_1
+```
+
+当前已确认：
+
+- `30_60_s_academic_v0_1`: mirror 上有 10 个 tar.gz，已下载到 `/nvmessd/lifanhong/video/_downloads/30_60_s_academic_v0_1`，正在解压到正式视频目录
+- `0_30_s_academic_v0_1`: 本地当前只有部分子集（约 1,756 个视频），mirror 上完整 academic 子集是 8 个 tar.gz，仍需补齐
+
+### mirror 下载来源
+
+Hugging Face 官方域名在当前环境不可达；使用 `hf-mirror.com`：
+
+```bash
+curl -L "https://hf-mirror.com/api/datasets/lmms-lab/LLaVA-Video-178K/tree/main/30_60_s_academic_v0_1" |
+  jq -r '.[] | select(.path | test("videos_[0-9]+\\.tar\\.gz$")) |
+  "https://hf-mirror.com/datasets/lmms-lab/LLaVA-Video-178K/resolve/main/\(.path)"'
+```
+
+### 覆盖率检查
+
+```bash
+python3 - <<'PY'
+import json
+from pathlib import Path
+
+base = Path("/nvmessd/lifanhong/video")
+video_dirs = [
+    base / "llava-video/0_30_s_academic_v0_1",
+    base / "llava-video/30_60_s_academic_v0_1",
+]
+video_index = {
+    p.name
+    for d in video_dirs if d.is_dir()
+    for p in d.rglob("*")
+    if p.suffix.lower() in {".mp4", ".mkv", ".webm", ".avi", ".mov", ".m4v"}
+}
+for split in ["train", "val", "test"]:
+    path = base / f"parsed/visual_qa_v3_0_60_{split}.jsonl"
+    vids = set()
+    with path.open() as f:
+        for line in f:
+            item = json.loads(line)
+            vids.add(Path(item["video_path"]).name)
+    resolved = vids & video_index
+    print(split, "unique_videos", len(vids), "resolved", len(resolved), "missing", len(vids - resolved))
+PY
+```
+
+110K teacher shard cache 只有在上述视频覆盖率接近完整后再提取；推荐 `--shard_size 256`，当前 DDP 写法会产生约 **432** 个 shard 文件。
+
 ## 文件结构
 
 ```
