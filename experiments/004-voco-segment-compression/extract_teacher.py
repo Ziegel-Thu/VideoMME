@@ -234,24 +234,94 @@ def main(args):
     prefetch_workers = args.prefetch_workers
     pbar = tqdm(total=len(my_indices), desc=f"[rank {rank}]", disable=not is_main)
 
-    with ThreadPoolExecutor(max_workers=prefetch_workers) as executor:
-        futures = []
-        # 提交初始批次
-        submit_ptr = 0
-        max_inflight = prefetch_workers * 2
-        while submit_ptr < len(my_indices) and submit_ptr < max_inflight:
-            futures.append(executor.submit(prefetch_one, my_indices[submit_ptr]))
-            submit_ptr += 1
+    def _gpu_forward_and_save(idx, proc_inputs):
+        """GPU forward + 保存，供 prefetch 和串行路径共用。"""
+        nonlocal n_success, n_error
+        item = samples[idx]
+        try:
+            pv = proc_inputs.get("pixel_values_videos")
+            vg = proc_inputs.get("video_grid_thw")
+            if pv is None:
+                n_error += 1
+                return
 
-        for future in futures:
-            idx, proc_inputs, err = future.result()
-            item = samples[idx]
+            with torch.no_grad():
+                video_embeds, tokens_per_frame, _ = get_video_embeds(
+                    base, pv, vg, device,
+                )
+                video_embeds = video_embeds.to(dtype)
 
-            # 提交下一个
-            if submit_ptr < len(my_indices):
+                segments = split_into_segments(
+                    video_embeds, tokens_per_frame, args.frames_per_segment,
+                )
+
+                q_text = (f"<|im_start|>user\n{item['question']}"
+                          f"<|im_end|>\n<|im_start|>assistant\n")
+                q_ids = tokenizer.encode(
+                    q_text, add_special_tokens=False, return_tensors="pt",
+                ).to(device)
+                q_embeds = embed_layer(q_ids).squeeze(0).to(dtype)
+
+                teacher_q_hidden = []
+                for seg in segments:
+                    t_hidden = teacher_forward_segment(
+                        inner, seg, q_embeds, device,
+                    )
+                    teacher_q_hidden.append(t_hidden.cpu())
+
+            save_data = {
+                "segments": [s.cpu() for s in segments],
+                "q_embeds": q_embeds.cpu(),
+                "teacher_q_hidden": teacher_q_hidden,
+                "video_path": item.get("video_path", ""),
+                "question": item.get("question", ""),
+                "answer": item.get("answer", ""),
+                "n_segments": len(segments),
+            }
+            writer.add(save_data)
+            n_success += 1
+
+            if is_main:
+                pbar.set_postfix(ok=n_success, skip=n_skip, err=n_error)
+
+        except Exception as e:
+            n_error += 1
+            if is_main:
+                print(f"  [错误] idx={idx}: {e}")
+
+    if prefetch_workers > 0:
+        # ---- Prefetch 模式 ----
+        with ThreadPoolExecutor(max_workers=prefetch_workers) as executor:
+            futures = []
+            submit_ptr = 0
+            max_inflight = prefetch_workers * 2
+            while submit_ptr < len(my_indices) and submit_ptr < max_inflight:
                 futures.append(executor.submit(prefetch_one, my_indices[submit_ptr]))
                 submit_ptr += 1
 
+            for future in futures:
+                idx, proc_inputs, err = future.result()
+
+                if submit_ptr < len(my_indices):
+                    futures.append(executor.submit(prefetch_one, my_indices[submit_ptr]))
+                    submit_ptr += 1
+
+                if err is not None or proc_inputs is None:
+                    n_error += 1
+                    if is_main and err:
+                        print(f"  [错误] idx={idx}: {err}")
+                    pbar.update(1)
+                    continue
+
+                _gpu_forward_and_save(idx, proc_inputs)
+                pbar.update(1)
+
+                if n_success % 50 == 0:
+                    torch.cuda.empty_cache()
+    else:
+        # ---- 串行模式（prefetch_workers=0）----
+        for idx in my_indices:
+            idx_result, proc_inputs, err = prefetch_one(idx)
             if err is not None or proc_inputs is None:
                 n_error += 1
                 if is_main and err:
@@ -259,58 +329,7 @@ def main(args):
                 pbar.update(1)
                 continue
 
-            try:
-                pv = proc_inputs.get("pixel_values_videos")
-                vg = proc_inputs.get("video_grid_thw")
-                if pv is None:
-                    n_error += 1
-                    pbar.update(1)
-                    continue
-
-                with torch.no_grad():
-                    video_embeds, tokens_per_frame, _ = get_video_embeds(
-                        base, pv, vg, device,
-                    )
-                    video_embeds = video_embeds.to(dtype)
-
-                    segments = split_into_segments(
-                        video_embeds, tokens_per_frame, args.frames_per_segment,
-                    )
-
-                    q_text = (f"<|im_start|>user\n{item['question']}"
-                              f"<|im_end|>\n<|im_start|>assistant\n")
-                    q_ids = tokenizer.encode(
-                        q_text, add_special_tokens=False, return_tensors="pt",
-                    ).to(device)
-                    q_embeds = embed_layer(q_ids).squeeze(0).to(dtype)
-
-                    teacher_q_hidden = []
-                    for seg in segments:
-                        t_hidden = teacher_forward_segment(
-                            inner, seg, q_embeds, device,
-                        )
-                        teacher_q_hidden.append(t_hidden.cpu())
-
-                save_data = {
-                    "segments": [s.cpu() for s in segments],
-                    "q_embeds": q_embeds.cpu(),
-                    "teacher_q_hidden": teacher_q_hidden,
-                    "video_path": item.get("video_path", ""),
-                    "question": item.get("question", ""),
-                    "answer": item.get("answer", ""),
-                    "n_segments": len(segments),
-                }
-                writer.add(save_data)
-                n_success += 1
-
-                if is_main:
-                    pbar.set_postfix(ok=n_success, skip=n_skip, err=n_error)
-
-            except Exception as e:
-                n_error += 1
-                if is_main:
-                    print(f"  [错误] idx={idx}: {e}")
-
+            _gpu_forward_and_save(idx, proc_inputs)
             pbar.update(1)
 
             if n_success % 50 == 0:
