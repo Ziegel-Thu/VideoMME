@@ -148,7 +148,7 @@ def main(args):
     embed_layer = inner.get_input_embeddings()
     dtype = torch.bfloat16
 
-    # 加载数据（不用 DataLoader，直接按 rank 分配）
+    # 加载数据，记录原始行号作为 global_idx
     video_dirs = args.video_dirs.split(",")
     video_index = {}
     for vdir in video_dirs:
@@ -157,29 +157,50 @@ def main(args):
         for f in glob.glob(os.path.join(vdir, "**", "*.mp4"), recursive=True):
             video_index[os.path.basename(f)] = f
 
-    samples = []
+    all_samples = []
     with open(args.data_path) as f:
-        for line in f:
+        for line_idx, line in enumerate(f):
             item = json.loads(line.strip())
             vname = os.path.basename(item["video_path"])
             if vname in video_index:
                 item["_resolved_video"] = video_index[vname]
-                samples.append(item)
+                item["_global_idx"] = line_idx
+                all_samples.append(item)
 
-    if args.skip_samples:
-        samples = samples[args.skip_samples:]
-    if args.max_samples:
-        samples = samples[:args.max_samples]
+    # 按 start_idx / end_idx 切分本机负责的范围
+    start_idx = args.start_idx if args.start_idx is not None else 0
+    end_idx = args.end_idx if args.end_idx is not None else len(all_samples)
+    samples = all_samples[start_idx:end_idx]
 
     if is_main:
-        print(f"  总样本数: {len(samples)}")
+        print(f"  resolve 总样本数: {len(all_samples)}")
+        print(f"  本机范围: [{start_idx}, {end_idx}) = {len(samples)} 条")
 
     os.makedirs(args.output_dir, exist_ok=True)
 
+    # Resume: 扫已有 shard，收集已完成的 global_idx
+    done_indices = set()
+    if args.resume:
+        existing_shards = sorted(glob.glob(
+            os.path.join(args.output_dir, "teacher_shard_*.pt"),
+        ))
+        for sp in existing_shards:
+            try:
+                shard_data = torch.load(sp, map_location="cpu", weights_only=False)
+                for item in shard_data:
+                    if "global_idx" in item:
+                        done_indices.add(item["global_idx"])
+            except Exception as e:
+                if is_main:
+                    print(f"  [resume 警告] 读取 {sp} 失败: {e}")
+        if is_main and done_indices:
+            print(f"  Resume: 已完成 {len(done_indices)} 条，跳过")
+
     writer = ShardWriter(args.output_dir, shard_size=args.shard_size, rank=rank)
 
-    # 按 rank 分配样本
-    my_indices = list(range(rank, len(samples), world_size))
+    # 按 rank 分配样本（在本机范围内交错）
+    my_indices = [i for i in range(rank, len(samples), world_size)
+                  if samples[i]["_global_idx"] not in done_indices]
 
     # ---- Prefetch: 后台线程预解码视频 + processor 预处理 ----
     from qwen_vl_utils import process_vision_info
@@ -272,6 +293,7 @@ def main(args):
                     teacher_q_hidden.append(t_hidden.cpu())
 
             save_data = {
+                "global_idx": item["_global_idx"],
                 "segments": [s.cpu() for s in segments],
                 "q_embeds": q_embeds.cpu(),
                 "teacher_q_hidden": teacher_q_hidden,
@@ -355,8 +377,12 @@ if __name__ == "__main__":
     parser.add_argument("--model_path", type=str,
                         default="Qwen/Qwen2.5-VL-7B-Instruct")
     parser.add_argument("--max_samples", type=int, default=None)
-    parser.add_argument("--skip_samples", type=int, default=None,
-                        help="跳过前 N 条样本，用于多机分段提取")
+    parser.add_argument("--start_idx", type=int, default=None,
+                        help="本机负责的起始样本索引（含）")
+    parser.add_argument("--end_idx", type=int, default=None,
+                        help="本机负责的结束样本索引（不含）")
+    parser.add_argument("--resume", action="store_true",
+                        help="扫描已有 shard 跳过已完成的 global_idx")
     parser.add_argument("--fps", type=float, default=1.0)
     parser.add_argument("--frames_per_segment", type=int, default=2)
     parser.add_argument("--max_frames", type=int, default=30)
