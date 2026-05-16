@@ -25,6 +25,8 @@ import glob
 import uuid
 import tempfile
 import argparse
+from concurrent.futures import ThreadPoolExecutor
+from queue import Queue
 
 import torch
 import torch.nn as nn
@@ -176,16 +178,14 @@ def main(args):
 
     # 按 rank 分配样本
     my_indices = list(range(rank, len(samples), world_size))
-    pbar = tqdm(my_indices, desc=f"[rank {rank}]", disable=not is_main)
 
-    n_success = 0
-    n_skip = 0
-    n_error = 0
+    # ---- Prefetch: 后台线程预解码视频 + processor 预处理 ----
+    from qwen_vl_utils import process_vision_info
 
-    for idx in pbar:
+    def prefetch_one(idx):
+        """在 CPU 线程中完成视频解码和 processor 预处理，返回 GPU forward 所需输入。"""
         item = samples[idx]
         try:
-            # 1. 视频解码
             vr = decord.VideoReader(item["_resolved_video"])
             duration = len(vr) / vr.get_avg_fps()
             n_frames = max(args.frames_per_segment,
@@ -195,9 +195,6 @@ def main(args):
                 n_frames = args.frames_per_segment
 
             frames, _ = extract_frames(item["_resolved_video"], n_frames)
-
-            # 2. Vision encoder → dense embeddings
-            from qwen_vl_utils import process_vision_info
 
             uid = f"{os.getpid()}_{uuid.uuid4().hex[:8]}"
             tmp_dir = tempfile.gettempdir()
@@ -226,64 +223,98 @@ def main(args):
                 except OSError:
                     pass
 
-            pv = proc_inputs.get("pixel_values_videos")
-            vg = proc_inputs.get("video_grid_thw")
-            if pv is None:
+            return idx, proc_inputs, None
+        except Exception as e:
+            return idx, None, e
+
+    n_success = 0
+    n_skip = 0
+    n_error = 0
+
+    prefetch_workers = args.prefetch_workers
+    pbar = tqdm(total=len(my_indices), desc=f"[rank {rank}]", disable=not is_main)
+
+    with ThreadPoolExecutor(max_workers=prefetch_workers) as executor:
+        futures = []
+        # 提交初始批次
+        submit_ptr = 0
+        max_inflight = prefetch_workers * 2
+        while submit_ptr < len(my_indices) and submit_ptr < max_inflight:
+            futures.append(executor.submit(prefetch_one, my_indices[submit_ptr]))
+            submit_ptr += 1
+
+        for future in futures:
+            idx, proc_inputs, err = future.result()
+            item = samples[idx]
+
+            # 提交下一个
+            if submit_ptr < len(my_indices):
+                futures.append(executor.submit(prefetch_one, my_indices[submit_ptr]))
+                submit_ptr += 1
+
+            if err is not None or proc_inputs is None:
                 n_error += 1
+                if is_main and err:
+                    print(f"  [错误] idx={idx}: {err}")
+                pbar.update(1)
                 continue
 
-            with torch.no_grad():
-                video_embeds, tokens_per_frame, _ = get_video_embeds(
-                    base, pv, vg, device,
-                )
-                video_embeds = video_embeds.to(dtype)
+            try:
+                pv = proc_inputs.get("pixel_values_videos")
+                vg = proc_inputs.get("video_grid_thw")
+                if pv is None:
+                    n_error += 1
+                    pbar.update(1)
+                    continue
 
-                # 3. 切段
-                segments = split_into_segments(
-                    video_embeds, tokens_per_frame, args.frames_per_segment,
-                )
-
-                # 4. Question embeddings
-                q_text = (f"<|im_start|>user\n{item['question']}"
-                          f"<|im_end|>\n<|im_start|>assistant\n")
-                q_ids = tokenizer.encode(
-                    q_text, add_special_tokens=False, return_tensors="pt",
-                ).to(device)
-                q_embeds = embed_layer(q_ids).squeeze(0).to(dtype)
-
-                # 5. Teacher forward per segment
-                teacher_q_hidden = []
-                for seg in segments:
-                    t_hidden = teacher_forward_segment(
-                        inner, seg, q_embeds, device,
+                with torch.no_grad():
+                    video_embeds, tokens_per_frame, _ = get_video_embeds(
+                        base, pv, vg, device,
                     )
-                    teacher_q_hidden.append(t_hidden.cpu())
+                    video_embeds = video_embeds.to(dtype)
 
-            # 6. 保存（全部转 CPU bf16）
-            save_data = {
-                "segments": [s.cpu() for s in segments],
-                "q_embeds": q_embeds.cpu(),
-                "teacher_q_hidden": teacher_q_hidden,
-                "video_path": item.get("video_path", ""),
-                "question": item.get("question", ""),
-                "answer": item.get("answer", ""),
-                "n_segments": len(segments),
-            }
-            writer.add(save_data)
-            n_success += 1
+                    segments = split_into_segments(
+                        video_embeds, tokens_per_frame, args.frames_per_segment,
+                    )
 
-            if is_main:
-                pbar.set_postfix(ok=n_success, skip=n_skip, err=n_error)
+                    q_text = (f"<|im_start|>user\n{item['question']}"
+                              f"<|im_end|>\n<|im_start|>assistant\n")
+                    q_ids = tokenizer.encode(
+                        q_text, add_special_tokens=False, return_tensors="pt",
+                    ).to(device)
+                    q_embeds = embed_layer(q_ids).squeeze(0).to(dtype)
 
-        except Exception as e:
-            n_error += 1
-            if is_main:
-                print(f"  [错误] idx={idx}: {e}")
-            continue
+                    teacher_q_hidden = []
+                    for seg in segments:
+                        t_hidden = teacher_forward_segment(
+                            inner, seg, q_embeds, device,
+                        )
+                        teacher_q_hidden.append(t_hidden.cpu())
 
-        # 定期清理 CUDA cache
-        if n_success % 50 == 0:
-            torch.cuda.empty_cache()
+                save_data = {
+                    "segments": [s.cpu() for s in segments],
+                    "q_embeds": q_embeds.cpu(),
+                    "teacher_q_hidden": teacher_q_hidden,
+                    "video_path": item.get("video_path", ""),
+                    "question": item.get("question", ""),
+                    "answer": item.get("answer", ""),
+                    "n_segments": len(segments),
+                }
+                writer.add(save_data)
+                n_success += 1
+
+                if is_main:
+                    pbar.set_postfix(ok=n_success, skip=n_skip, err=n_error)
+
+            except Exception as e:
+                n_error += 1
+                if is_main:
+                    print(f"  [错误] idx={idx}: {e}")
+
+            pbar.update(1)
+
+            if n_success % 50 == 0:
+                torch.cuda.empty_cache()
 
     if is_main:
         print(f"\n=== 提取完成 ===")
@@ -307,5 +338,7 @@ if __name__ == "__main__":
     parser.add_argument("--frames_per_segment", type=int, default=2)
     parser.add_argument("--max_frames", type=int, default=30)
     parser.add_argument("--shard_size", type=int, default=1000)
+    parser.add_argument("--prefetch_workers", type=int, default=4,
+                        help="后台视频解码线程数，减少 GPU 空等时间")
     args = parser.parse_args()
     main(args)
