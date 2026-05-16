@@ -123,12 +123,20 @@ Stage 4: 长视频 VoCo 压缩 + Segment Selector
 - 训练 temporal head 时，数据必须有 **temporal 标注**
 - 每次换数据前确认标签字段非空
 
-### 6. 文档实时更新
+### 6. 文档实时更新（强制执行）
 - **plan.md**：每做完一个 phase / 发现重要问题 / 方向修正时，立即更新
 - **实验 README.md**：记录当前配置、已知问题、结果
 - **commit message**：说清楚改了什么、为什么改
 - 不要等到被问"有在记录吗"才去更新
 - **CLAUDE.md 自查**：每次 commit 时重温 CLAUDE.md，检查是否遵守了实验纪律
+
+**硬性规则：每完成以下任何一项，必须先更新 README.md 并 commit，再开始下一项工作：**
+- 数据下载/解压完成 → 记录数量、路径、覆盖率
+- teacher cache 提取完成 → 记录 shard 数、样本数、大小
+- 训练完成（含每个 epoch）→ 记录 checkpoint、loss、耗时
+- eval 完成 → 记录准确率表格
+- 代码修改 → 记录改了什么、为什么改
+- 违反此规则等同于违反实验纪律
 
 ### 7. amlt 提交检查
 - [ ] amlt.yaml 中的 blob 路径存在（`amlt storage list` 验证）
