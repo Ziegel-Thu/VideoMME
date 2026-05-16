@@ -303,6 +303,16 @@ CUDA_VISIBLE_DEVICES=4,5,6,7 conda run --no-capture-output -n video torchrun --n
 | 2 | 1.135115 | 6638 | `compressor_epoch2.pt` |
 | 3 | 1.047390 | 6638 | `compressor_epoch3.pt` |
 
+同条件 eval（`0_30_s_academic_v0_1`，200 条）：
+
+| Epoch | Acc | Correct |
+|-------|----:|--------:|
+| 1 | 66.50% | 133/200 |
+| 2 | 62.00% | 124/200 |
+| 3 | 62.50% | 125/200 |
+
+结论：10K 段间 attention 版本没有超过原 B-1L 最佳 71.0%，当前应作为 ablation 记录，不作为后续 10K 主路线。
+
 ### Compressor 10K / 200 条 test 结果
 
 以下结果均在**相同条件**下评测：`--video_dirs=0_30_s_academic_v0_1`，`--max_samples 200`，`visual_qa_v3_0_60_test.jsonl`。
@@ -313,10 +323,12 @@ CUDA_VISIBLE_DEVICES=4,5,6,7 conda run --no-capture-output -n video torchrun --n
 | B-2L | - | - | 69.0% | - | - |
 | D-1L | - | - | 63.0% | 65.0% | 62.5% |
 | BD-1L | - | - | 69.5% | - | - |
+| B-1L + inter-seg 1L | 66.5% | 62.0% | 62.5% | - | - |
 
 结论：
 - **B-1L 在 epoch3 达到峰值 71.0%，epoch4/5 略降到 67.5-68.5%**，说明 10K 数据已饱和，继续训有轻微过拟合
 - **D-1L 基本持平**（63.0% → 65.0% → 62.5%），D loss 效果始终不如 B
+- **段间 attention 10K ablation 未带来收益**（66.5% → 62.0% → 62.5%），低于 B-1L epoch3 的 71.0%
 - **最佳配置仍是 B-1L epoch3**
 
 ---
