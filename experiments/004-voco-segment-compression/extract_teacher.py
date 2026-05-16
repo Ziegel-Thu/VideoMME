@@ -37,6 +37,38 @@ import decord
 from model import get_video_embeds, split_into_segments
 
 
+class ShardWriter:
+    """按 shard_size 将样本聚合保存，避免一条一个小文件。"""
+
+    def __init__(self, output_dir, shard_size=1000, rank=0):
+        self.output_dir = output_dir
+        self.shard_size = shard_size
+        self.rank = rank
+        self.buffer = []
+        self.shard_idx = 0
+        os.makedirs(output_dir, exist_ok=True)
+
+    def add(self, sample):
+        self.buffer.append(sample)
+        if len(self.buffer) >= self.shard_size:
+            self.flush()
+
+    def flush(self):
+        if not self.buffer:
+            return None
+        shard_path = os.path.join(
+            self.output_dir,
+            f"teacher_shard_rank{self.rank}_{self.shard_idx:03d}.pt",
+        )
+        torch.save(self.buffer, shard_path)
+        self.buffer = []
+        self.shard_idx += 1
+        return shard_path
+
+    def close(self):
+        return self.flush()
+
+
 def extract_frames(video_path, num_frames):
     """从视频均匀采样 num_frames 帧。"""
     vr = decord.VideoReader(video_path)
@@ -140,6 +172,8 @@ def main(args):
 
     os.makedirs(args.output_dir, exist_ok=True)
 
+    writer = ShardWriter(args.output_dir, shard_size=args.shard_size, rank=rank)
+
     # 按 rank 分配样本
     my_indices = list(range(rank, len(samples), world_size))
     pbar = tqdm(my_indices, desc=f"[rank {rank}]", disable=not is_main)
@@ -149,13 +183,6 @@ def main(args):
     n_error = 0
 
     for idx in pbar:
-        save_path = os.path.join(args.output_dir, f"{idx:06d}.pt")
-
-        # 跳过已提取的
-        if os.path.exists(save_path):
-            n_skip += 1
-            continue
-
         item = samples[idx]
         try:
             # 1. 视频解码
@@ -242,7 +269,7 @@ def main(args):
                 "answer": item.get("answer", ""),
                 "n_segments": len(segments),
             }
-            torch.save(save_data, save_path)
+            writer.add(save_data)
             n_success += 1
 
             if is_main:
@@ -262,6 +289,7 @@ def main(args):
         print(f"\n=== 提取完成 ===")
         print(f"  成功: {n_success}, 跳过: {n_skip}, 错误: {n_error}")
 
+    writer.close()
     dist.destroy_process_group()
 
 
@@ -278,5 +306,6 @@ if __name__ == "__main__":
     parser.add_argument("--fps", type=float, default=1.0)
     parser.add_argument("--frames_per_segment", type=int, default=2)
     parser.add_argument("--max_frames", type=int, default=30)
+    parser.add_argument("--shard_size", type=int, default=1000)
     args = parser.parse_args()
     main(args)

@@ -62,6 +62,44 @@ loss = CrossEntropy(logits[answer_positions], answer_token_ids)
 4. **A 位置**: 标准最后位置
 5. **Temporal Head (Stage 3)**: question-aware，从 voco hidden states + Q 解码时间段
 
+## Shard Cache 规范（当前默认流程）
+
+- **teacher cache 只允许 shard 格式**：目录内必须是 `teacher_shard_*.pt`
+- **训练/评测只允许从本地 SSD 读取**：路径必须在 `/nvmessd/...`
+- **禁止直接从 NFS 读取 teacher cache**：`train_compressor.py` 会显式拒绝 `/beegfs_hdd/...`
+- **旧的按样本 `.pt` 小文件 cache 已废弃**：不要再用 `glob + open` 方式读上万个小文件
+
+### 生成 shard cache
+
+直接提取为 shard：
+
+```bash
+python extract_teacher.py \
+  --output_dir /nvmessd/lifanhong/video/teacher_cache_10k_sharded_v2 \
+  --shard_size 1000
+```
+
+把已有 SSD 小文件 cache 打包成 shard：
+
+```bash
+python pack_teacher_cache.py \
+  --input_dir /nvmessd/lifanhong/video/teacher_cache_10k \
+  --output_dir /nvmessd/lifanhong/video/teacher_cache_10k_sharded_v2 \
+  --shard_size 1000
+```
+
+### shard 训练命令
+
+```bash
+CUDA_VISIBLE_DEVICES=0,1,2,3 torchrun --nproc_per_node=4 train_compressor.py \
+  --cache_dir /nvmessd/lifanhong/video/teacher_cache_10k_sharded_v2 \
+  --output_dir /nvmessd/lifanhong/video/outputs_compressor_1L \
+  --model_path /nvmessd/lifanhong/.cache/modelscope/Qwen/Qwen2___5-VL-7B-Instruct \
+  --n_layers 1 \
+  --K_seg 8 \
+  --loss_type B
+```
+
 ## 文件结构
 
 ```
@@ -111,6 +149,8 @@ loss = CrossEntropy(logits[answer_positions], answer_token_ids)
 5. **拼接版 DDP**: 需手动 all_reduce，避免 UnboundLocalError + NCCL 同步问题
 6. **NCCL timeout**: 混合长度数据需设 timeout=2h（init_process_group）
 7. **VoCo 压缩比 54:1** vs 003 BN 13.5:1，信息损失大
+8. **teacher cache 必须 shard 化**：上万个小 `.pt` 文件会带来严重 metadata 压力，尤其不能放大到 NFS
+9. **Compressor 必须只用压缩 token 做评测**：不能再把 dense vision 混回 answer-time context
 
 ## 已完成
 
@@ -133,6 +173,25 @@ loss = CrossEntropy(logits[answer_positions], answer_token_ids)
 - [ ] Stage 3: question-aware temporal head
 - [ ] VoCo-only ablation 完整训练 + 评测
 - [ ] VoCo-only vs VoCo+LoRA 对比
+
+## Cross-Attention Compressor（有效版本）
+
+静态 `voco_embeds` baseline 已废弃；当前有效路线是 **Cross-Attention compressor**：
+
+- `compressor.py`: learnable queries + cross-attention
+- `train_compressor.py`: 支持 `loss_type=B|D|BD`
+- `eval_compressor.py`: 评测时只使用 compressed tokens，不回注 dense vision
+
+### 当前 10K / 200 条 test 结果
+
+| 配置 | Acc |
+|------|-----|
+| B-1L | **71.0%** |
+| B-2L | 69.0% |
+| D-1L | 63.0% |
+| BD-1L | 69.5% |
+
+当前最佳配置：**B-1L（1 层 compressor + B loss）**。
 
 ---
 

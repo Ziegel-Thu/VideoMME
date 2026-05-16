@@ -42,21 +42,34 @@ class TeacherCacheDataset(Dataset):
     """加载 extract_teacher.py 预提取的 teacher 特征。"""
 
     def __init__(self, cache_dir, max_samples=None):
-        self.files = sorted(glob.glob(os.path.join(cache_dir, "*.pt")))
+        self.cache_dir = validate_cache_dir(cache_dir)
+        self.sample_index = []
+
+        shard_files = sorted(glob.glob(os.path.join(self.cache_dir, "teacher_shard_*.pt")))
+        if not shard_files:
+            raise ValueError(
+                f"{self.cache_dir} 中没有 teacher_shard_*.pt。"
+                "请先用 pack_teacher_cache.py 或 shard 版 extract_teacher.py 生成 shard cache。"
+            )
+        for shard_path in shard_files:
+            shard_samples = torch.load(shard_path, map_location="cpu", weights_only=False)
+            for item_idx in range(len(shard_samples)):
+                self.sample_index.append((shard_path, item_idx))
+
         if max_samples:
-            self.files = self.files[:max_samples]
-        print(f"TeacherCacheDataset: {len(self.files)} 个样本 from {cache_dir}")
+            self.sample_index = self.sample_index[:max_samples]
+        print(f"TeacherCacheDataset: {len(self.sample_index)} 个样本 from {self.cache_dir}")
 
     def __len__(self):
-        return len(self.files)
+        return len(self.sample_index)
 
     def __getitem__(self, idx):
         try:
-            data = torch.load(self.files[idx], map_location="cpu",
-                              weights_only=False)
-            return data
+            file_path, item_idx = self.sample_index[idx]
+            data = torch.load(file_path, map_location="cpu", weights_only=False)
+            return data[item_idx]
         except Exception as e:
-            print(f"  [加载错误] {self.files[idx]}: {e}")
+            print(f"  [加载错误] {self.sample_index[idx][0]}: {e}")
             return None
 
 
@@ -79,6 +92,17 @@ def get_inner(base_model):
     except ImportError:
         pass
     return m
+
+
+def validate_cache_dir(cache_dir):
+    """只允许从本地 SSD 读取 teacher cache，拒绝 NFS。"""
+    real_path = os.path.realpath(cache_dir)
+    if real_path.startswith("/beegfs_hdd/"):
+        raise ValueError(
+            f"禁止直接从 NFS 读取 teacher cache: {real_path}。"
+            "请先同步到本地 SSD (/nvmessd/...) 再训练。"
+        )
+    return real_path
 
 
 def lm_forward_kv(inner, tokens, device):
