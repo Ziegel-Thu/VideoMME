@@ -44,6 +44,8 @@ class TeacherCacheDataset(Dataset):
     def __init__(self, cache_dir, max_samples=None):
         self.cache_dir = validate_cache_dir(cache_dir)
         self.sample_index = []
+        self._loaded_shard_path = None
+        self._loaded_shard_samples = None
 
         shard_files = sorted(glob.glob(os.path.join(self.cache_dir, "teacher_shard_*.pt")))
         if not shard_files:
@@ -66,8 +68,12 @@ class TeacherCacheDataset(Dataset):
     def __getitem__(self, idx):
         try:
             file_path, item_idx = self.sample_index[idx]
-            data = torch.load(file_path, map_location="cpu", weights_only=False)
-            return data[item_idx]
+            if file_path != self._loaded_shard_path:
+                self._loaded_shard_samples = torch.load(
+                    file_path, map_location="cpu", weights_only=False,
+                )
+                self._loaded_shard_path = file_path
+            return self._loaded_shard_samples[item_idx]
         except Exception as e:
             print(f"  [加载错误] {self.sample_index[idx][0]}: {e}")
             return None
@@ -233,7 +239,8 @@ def train(args):
         log("⚠️ 数据集为空，退出")
         return
 
-    train_sampler = DistributedSampler(dataset, shuffle=True) if world_size > 1 else None
+    # shard 文件很大，保持按 shard 顺序访问，避免在不同 shard 间频繁来回切换。
+    train_sampler = DistributedSampler(dataset, shuffle=False) if world_size > 1 else None
     loader = DataLoader(
         dataset, batch_size=1,
         sampler=train_sampler,

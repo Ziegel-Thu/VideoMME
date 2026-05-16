@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import torch
 
@@ -45,6 +46,38 @@ class TrainCompressorCacheTests(unittest.TestCase):
 
             with self.assertRaises(ValueError):
                 TeacherCacheDataset(tmpdir)
+
+    def test_teacher_cache_dataset_reuses_loaded_shard(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            shard_path = Path(tmpdir) / "teacher_shard_000.pt"
+            shard_samples = [
+                {
+                    "segments": [torch.zeros(2, 4)],
+                    "q_embeds": torch.full((3, 4), idx, dtype=torch.float32),
+                    "teacher_q_hidden": [torch.zeros(3, 4)],
+                }
+                for idx in range(2)
+            ]
+            torch.save(shard_samples, shard_path)
+
+            real_load = torch.load
+            load_calls = []
+
+            def counting_load(*args, **kwargs):
+                load_calls.append(Path(args[0]).name)
+                return real_load(*args, **kwargs)
+
+            with mock.patch("train_compressor.torch.load", side_effect=counting_load):
+                dataset = TeacherCacheDataset(tmpdir)
+                init_calls = list(load_calls)
+                sample0 = dataset[0]
+                sample1 = dataset[1]
+
+            self.assertEqual(len(dataset), 2)
+            self.assertEqual(init_calls, ["teacher_shard_000.pt"])
+            self.assertEqual(load_calls[1:], ["teacher_shard_000.pt"])
+            self.assertTrue(torch.equal(sample0["q_embeds"], torch.zeros(3, 4)))
+            self.assertTrue(torch.equal(sample1["q_embeds"], torch.ones(3, 4)))
 
 
 if __name__ == "__main__":
