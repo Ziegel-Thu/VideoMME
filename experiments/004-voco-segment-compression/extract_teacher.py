@@ -218,17 +218,11 @@ def main(args):
                 n_frames = args.frames_per_segment
 
             frames, _ = extract_frames(item["_resolved_video"], n_frames)
+            del vr
 
-            uid = f"{os.getpid()}_{uuid.uuid4().hex[:8]}"
-            tmp_dir = tempfile.gettempdir()
-            tmp_paths = []
-            for i, img in enumerate(frames):
-                p = os.path.join(tmp_dir, f"_vf_{uid}_{i}.jpg")
-                img.save(p)
-                tmp_paths.append(p)
-
+            # 直接传 PIL Image 列表给 processor，不写临时文件，避免 page cache 膨胀
             messages = [{"role": "user", "content": [
-                {"type": "video", "video": tmp_paths, "fps": args.fps},
+                {"type": "video", "video": frames, "fps": args.fps},
                 {"type": "text", "text": "x"},
             ]}]
             text = processor.apply_chat_template(
@@ -239,12 +233,7 @@ def main(args):
                 text=[text], images=image_inputs, videos=video_inputs,
                 return_tensors="pt",
             )
-
-            for p in tmp_paths:
-                try:
-                    os.remove(p)
-                except OSError:
-                    pass
+            del frames, image_inputs, video_inputs, messages
 
             return idx, proc_inputs, None
         except Exception as e:
