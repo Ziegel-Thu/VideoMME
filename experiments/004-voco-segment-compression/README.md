@@ -204,7 +204,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 \
 
 ### 110K 旧版 B-1L compressor 训练（gpu8, 2026-05-17）
 
-在修复大 shard 索引初始化后，110K 旧版 B-1L 蒸馏训练已切到 gpu8 单机 8×A40：
+在修复大 shard 索引初始化后，先尝试 gpu8 单机 8×A40 训练：
 
 ```bash
 tmux new-session -d -s train-110k-b1l-old \
@@ -221,17 +221,37 @@ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 \
 2>&1 | tee /nvmessd/lifanhong/video/log_train_compressor_110k_B1L_old_8gpu_shardhint.txt"
 ```
 
+8 卡运行到 epoch1 step 256 后退出，日志中 local rank 0 收到 `SIGKILL`，没有 Python traceback，也没有生成 checkpoint。由于 8 卡启动时主机内存压力很高，本轮按用户授权降到 4 卡重新跑。
+
+当前 4 卡 fallback 命令：
+
+```bash
+tmux new-session -d -s train-110k-b1l-old \
+"cd /beegfs_hdd/data/nfs_share/users/lifanhong/nishome/video/experiments/004-voco-segment-compression && \
+CUDA_VISIBLE_DEVICES=0,1,2,3 \
+/beegfs_hdd/data/nfs_share/users/lifanhong/nishome/miniconda3/envs/video/bin/python \
+-m torch.distributed.run --nproc_per_node=4 --master_port=29544 train_compressor.py \
+--cache_dir /nvmessd/lifanhong/video/teacher_cache_110k_sharded_256 \
+--cache_shard_size 512 \
+--output_dir /nvmessd/lifanhong/video/outputs_compressor_110k_B1L_old_4gpu_shardhint \
+--model_path /nvmessd/lifanhong/.cache/modelscope/Qwen/Qwen2___5-VL-7B-Instruct \
+--K_seg 8 --n_layers 1 --inter_layers 0 --loss_type B \
+--lr 1e-4 --epochs 3 --save_steps 1000 \
+2>&1 | tee /nvmessd/lifanhong/video/log_train_compressor_110k_B1L_old_4gpu_shardhint.txt"
+```
+
 | 项目 | 数值 |
 |------|------|
 | tmux session | `train-110k-b1l-old` |
-| 日志 | `/nvmessd/lifanhong/video/log_train_compressor_110k_B1L_old_8gpu_shardhint.txt` |
-| 输出 | `/nvmessd/lifanhong/video/outputs_compressor_110k_B1L_old_8gpu_shardhint/` |
+| 当前日志 | `/nvmessd/lifanhong/video/log_train_compressor_110k_B1L_old_4gpu_shardhint.txt` |
+| 当前输出 | `/nvmessd/lifanhong/video/outputs_compressor_110k_B1L_old_4gpu_shardhint/` |
 | 数据量 | `TeacherCacheDataset: 102952` |
-| 每 epoch step | `12869` |
-| 启动确认 | epoch1 已进入 step，最新人工检查到 step 170 |
-| 监控 | schedule `#27` 每 20 分钟检查 |
+| 4 卡每 epoch step | `25738` |
+| 8 卡失败点 | epoch1 step 256，local rank 0 `SIGKILL`，无 checkpoint |
+| 4 卡启动确认 | epoch1 已进入 step，最新人工检查到 step 216 |
+| 监控 | schedule `#28` 每 20 分钟检查 |
 
-注意：必须继续使用显式 env Python 启动，不能用 `conda run -n video torchrun`；后者曾调用 base Python，导致 `transformers` 导入失败。第一轮 4 卡试跑到 step 128 后按用户要求停止，切到 8 卡重新跑，未产生可 resume 的 checkpoint。
+注意：必须继续使用显式 env Python 启动，不能用 `conda run -n video torchrun`；后者曾调用 base Python，导致 `transformers` 导入失败。第一轮 4 卡试跑到 step 128 后按用户要求停止，切到 8 卡重新跑；8 卡也未产生可 resume 的 checkpoint，因此当前 4 卡 fallback 从头开始。
 
 ## 文件结构
 
