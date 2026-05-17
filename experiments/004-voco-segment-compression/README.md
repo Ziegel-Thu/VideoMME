@@ -298,7 +298,7 @@ B-2L 实际启动记录（gpu8, 2026-05-17）：
 | 输出目录 | `/nvmessd/lifanhong/video/outputs_compressor_110k_B2L_old_4gpu_1_4_shardhint/` |
 | 日志 | `/nvmessd/lifanhong/video/log_train_compressor_110k_B2L_old_4gpu_1_4_shardhint.txt` |
 | 数据量 | `TeacherCacheDataset: 102952` |
-| 当前状态 | 已进入 epoch1，最新人工检查到 step 16899；已保存 `compressor_e1_s1000.pt` 到 `compressor_e1_s16000.pt`；日志未见 OOM/Traceback |
+| 当前状态 | 已进入 epoch1，最新人工检查到 step 17364；已保存 `compressor_e1_s1000.pt` 到 `compressor_e1_s17000.pt`；日志未见 OOM/Traceback |
 | 监控口径 | 剩余 eval 只在 GPU0 排队，GPU1-4 保留给 B-2L |
 
 ## 文件结构
@@ -467,6 +467,7 @@ CUDA_VISIBLE_DEVICES=4,5,6,7 conda run --no-capture-output -n video torchrun --n
 
 | 配置 | checkpoint | 准确率 |
 |------|------------|--------|
+| 10K B-1L epoch1 | `outputs_compressor_1L/compressor_epoch1.pt` | 65.12%（1195/1835） |
 | 10K B-1L epoch3 | `outputs_compressor_1L/compressor_epoch3.pt` | 67.47%（1238/1835） |
 
 结论：
