@@ -105,7 +105,7 @@ def eval_compressor(args):
         if vname in video_index:
             item["_resolved_video"] = video_index[vname]
             resolved.append(item)
-    samples = resolved[:args.max_samples] if args.max_samples else resolved
+    samples = resolved[:args.max_samples] if args.max_samples > 0 else resolved
     print(f"评测数据: {len(samples)} 条")
 
     # ABCD token ids
@@ -240,6 +240,9 @@ if __name__ == "__main__":
     parser.add_argument("--data_path", required=True)
     parser.add_argument("--video_dirs", required=True)
     parser.add_argument("--checkpoint", required=True)
-    parser.add_argument("--max_samples", type=int, default=200)
+    parser.add_argument(
+        "--max_samples", type=int, default=200,
+        help="评测样本数；设为 0 表示使用完整 test split。",
+    )
     args = parser.parse_args()
     eval_compressor(args)
