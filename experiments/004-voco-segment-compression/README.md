@@ -266,6 +266,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 \
 | epoch1 quick eval (0-30 前 200) | 71.50%（143/200），日志 `/nvmessd/lifanhong/video/log_eval_compressor_110k_B1L_epoch1_gpu4_0_30_200.txt` |
 | epoch1 quick eval (0-60 前 200) | 66.00%（132/200），日志 `/nvmessd/lifanhong/video/log_eval_compressor_110k_B1L_epoch1_gpu4_200.txt` |
 | epoch1 full eval (0-30) | 70.08%（1286/1835），日志 `/nvmessd/lifanhong/video/log_eval_compressor_110k_B1L_epoch1_gpu4_0_30_full.txt` |
+| epoch1 full eval (0-60) | 68.48%（6919/10103），日志 `/nvmessd/lifanhong/video/log_eval_compressor_110k_B1L_epoch1_gpu0_0_60_full.txt` |
 | 当前策略 | B-1L 在进入 epoch2 后已暂停，切换 B-2L |
 | 监控 | schedule 每 20 分钟检查 epoch1 是否完成 |
 
@@ -297,7 +298,7 @@ B-2L 实际启动记录（gpu8, 2026-05-17）：
 | 输出目录 | `/nvmessd/lifanhong/video/outputs_compressor_110k_B2L_old_4gpu_1_4_shardhint/` |
 | 日志 | `/nvmessd/lifanhong/video/log_train_compressor_110k_B2L_old_4gpu_1_4_shardhint.txt` |
 | 数据量 | `TeacherCacheDataset: 102952` |
-| 当前状态 | 已进入 epoch1，最新人工检查到 step 12454；已保存 `compressor_e1_s1000.pt` 到 `compressor_e1_s12000.pt`；日志未见 OOM/Traceback |
+| 当前状态 | 已进入 epoch1，最新人工检查到 step 14659；已保存 `compressor_e1_s1000.pt` 到 `compressor_e1_s14000.pt`；日志未见 OOM/Traceback |
 | 监控口径 | 剩余 eval 只在 GPU0 排队，GPU1-4 保留给 B-2L |
 
 ## 文件结构
