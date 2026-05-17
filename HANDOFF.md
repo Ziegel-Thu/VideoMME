@@ -36,8 +36,9 @@
 ## 提取完成后要做的事
 
 1. 用 `/nvmessd/lifanhong/video/teacher_cache_110k_sharded_256/` 启动 110K compressor 训练（B-1L 优先）。
-2. 训练前按 `CLAUDE.md` 做数据、模型、loss、overfit sanity 检查。
-3. 训练完成后更新 `experiments/004-voco-segment-compression/README.md` 并 commit。
+2. 训练命令必须带 `--cache_shard_size 512`，否则每个 rank 初始化时会重复 `torch.load` 全部 3.9T shard cache 并耗尽内存。
+3. 训练前按 `CLAUDE.md` 做数据、模型、loss、overfit sanity 检查。
+4. 训练完成后更新 `experiments/004-voco-segment-compression/README.md` 并 commit。
 
 ## 已完成的实验结果
 

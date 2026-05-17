@@ -41,7 +41,7 @@ from compressor import InterSegmentAttention, VoCoCompressor
 class TeacherCacheDataset(Dataset):
     """加载 extract_teacher.py 预提取的 teacher 特征。"""
 
-    def __init__(self, cache_dir, max_samples=None):
+    def __init__(self, cache_dir, max_samples=None, shard_size_hint=None):
         self.cache_dir = validate_cache_dir(cache_dir)
         self.sample_index = []
         self._loaded_shard_path = None
@@ -53,15 +53,62 @@ class TeacherCacheDataset(Dataset):
                 f"{self.cache_dir} 中没有 teacher_shard_*.pt。"
                 "请先用 pack_teacher_cache.py 或 shard 版 extract_teacher.py 生成 shard cache。"
             )
+
+        if shard_size_hint is None:
+            self._build_index_by_loading_shards(shard_files, max_samples)
+        else:
+            self._build_index_from_shard_size_hint(
+                shard_files, max_samples, shard_size_hint,
+            )
+        print(f"TeacherCacheDataset: {len(self.sample_index)} 个样本 from {self.cache_dir}")
+
+    def _add_shard_index(self, shard_path, sample_count, max_samples):
+        for item_idx in range(sample_count):
+            self.sample_index.append((shard_path, item_idx))
+            if max_samples and len(self.sample_index) >= max_samples:
+                return True
+        return False
+
+    def _build_index_by_loading_shards(self, shard_files, max_samples):
         for shard_path in shard_files:
-            shard_samples = torch.load(shard_path, map_location="cpu", weights_only=False)
-            for item_idx in range(len(shard_samples)):
-                self.sample_index.append((shard_path, item_idx))
-                if max_samples and len(self.sample_index) >= max_samples:
+            shard_samples = torch.load(
+                shard_path, map_location="cpu", weights_only=False,
+            )
+            if self._add_shard_index(shard_path, len(shard_samples), max_samples):
+                break
+
+    def _build_index_from_shard_size_hint(
+        self, shard_files, max_samples, shard_size_hint,
+    ):
+        if shard_size_hint <= 0:
+            raise ValueError("shard_size_hint 必须大于 0")
+
+        shard_groups = {}
+        for shard_path in shard_files:
+            name = os.path.basename(shard_path)
+            if name.startswith("teacher_shard_rank"):
+                group_key = name.split("_", 3)[2]
+            else:
+                group_key = "single"
+            shard_groups.setdefault(group_key, []).append(shard_path)
+
+        for group_key in sorted(shard_groups):
+            group_shards = sorted(shard_groups[group_key])
+            for shard_path in group_shards[:-1]:
+                if self._add_shard_index(
+                    shard_path, shard_size_hint, max_samples,
+                ):
                     break
             if max_samples and len(self.sample_index) >= max_samples:
                 break
-        print(f"TeacherCacheDataset: {len(self.sample_index)} 个样本 from {self.cache_dir}")
+
+            last_shard_samples = torch.load(
+                group_shards[-1], map_location="cpu", weights_only=False,
+            )
+            if self._add_shard_index(
+                group_shards[-1], len(last_shard_samples), max_samples,
+            ):
+                break
 
     def __len__(self):
         return len(self.sample_index)
@@ -256,6 +303,7 @@ def train(args):
     log(f"  lr: {args.lr}, epochs: {args.epochs}")
     log(f"  save_steps: {args.save_steps}")
     log(f"  cache_dir: {args.cache_dir}")
+    log(f"  cache_shard_size: {args.cache_shard_size}")
     log("=" * 60)
 
     # 加载 LLM（冻结，用于 student forward）
@@ -297,7 +345,11 @@ def train(args):
                 dist.broadcast(p.data, src=0)
 
     # 数据集
-    dataset = TeacherCacheDataset(args.cache_dir, max_samples=args.max_samples)
+    dataset = TeacherCacheDataset(
+        args.cache_dir,
+        max_samples=args.max_samples,
+        shard_size_hint=args.cache_shard_size,
+    )
     if len(dataset) == 0:
         log("⚠️ 数据集为空，退出")
         return
@@ -516,6 +568,8 @@ if __name__ == "__main__":
                         default="Qwen/Qwen2.5-VL-7B-Instruct",
                         help="LLM 模型路径（用于 student forward）")
     parser.add_argument("--max_samples", type=int, default=None)
+    parser.add_argument("--cache_shard_size", type=int, default=None,
+                        help="shard cache 每个完整 shard 的样本数；设置后初始化只读取每组最后一个 shard 来计数")
     parser.add_argument("--K_seg", type=int, default=8,
                         help="每段压缩 token 数")
     parser.add_argument("--n_layers", type=int, default=1,

@@ -111,6 +111,34 @@ class TrainCompressorCacheTests(unittest.TestCase):
             self.assertEqual(len(dataset), 1)
             self.assertEqual(load_calls, ["teacher_shard_000.pt"])
 
+    def test_teacher_cache_dataset_shard_size_hint_only_loads_last_shard_per_rank(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            sample = {
+                "segments": [torch.zeros(2, 4)],
+                "q_embeds": torch.zeros(3, 4),
+                "teacher_q_hidden": [torch.zeros(3, 4)],
+            }
+            torch.save([sample, sample], Path(tmpdir) / "teacher_shard_rank0_000.pt")
+            torch.save([sample, sample], Path(tmpdir) / "teacher_shard_rank0_001.pt")
+            torch.save([sample], Path(tmpdir) / "teacher_shard_rank0_002.pt")
+            torch.save([sample], Path(tmpdir) / "teacher_shard_rank1_000.pt")
+
+            real_load = torch.load
+            load_calls = []
+
+            def counting_load(*args, **kwargs):
+                load_calls.append(Path(args[0]).name)
+                return real_load(*args, **kwargs)
+
+            with mock.patch("train_compressor.torch.load", side_effect=counting_load):
+                dataset = TeacherCacheDataset(tmpdir, shard_size_hint=2)
+
+            self.assertEqual(len(dataset), 6)
+            self.assertEqual(
+                load_calls,
+                ["teacher_shard_rank0_002.pt", "teacher_shard_rank1_000.pt"],
+            )
+
 
 class InterSegmentAttentionTests(unittest.TestCase):
     def test_inter_segment_attention_preserves_segment_shapes(self):

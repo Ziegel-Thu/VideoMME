@@ -69,6 +69,7 @@ loss = CrossEntropy(logits[answer_positions], answer_token_ids)
 - **禁止直接从 NFS 读取 teacher cache**：`train_compressor.py` 会显式拒绝 `/beegfs_hdd/...`
 - **旧的按样本 `.pt` 小文件 cache 已废弃**：不要再用 `glob + open` 方式读上万个小文件
 - **提取支持安全 resume**：`extract_teacher.py --resume` 用 `global_idx` 跳过已完成样本，`ShardWriter` 从每个 rank 现有最大 shard 编号之后继续写，避免重启覆盖旧 shard
+- **大 shard 训练必须显式传 `--cache_shard_size`**：110K cache 约 3.9T，若初始化时逐个 `torch.load` 全部 shard，会在 8 个 rank 上重复扫描并耗尽内存；`--cache_shard_size 512` 只读取每组最后一个 shard 来计数
 
 ### 生成 shard cache
 
@@ -96,6 +97,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 torchrun --nproc_per_node=4 train_compressor.py \
   --cache_dir /nvmessd/lifanhong/video/teacher_cache_10k_sharded_v2 \
   --output_dir /nvmessd/lifanhong/video/outputs_compressor_1L \
   --model_path /nvmessd/lifanhong/.cache/modelscope/Qwen/Qwen2___5-VL-7B-Instruct \
+  --cache_shard_size 1000 \
   --n_layers 1 \
   --K_seg 8 \
   --loss_type B
@@ -193,6 +195,14 @@ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 \
 | log 大小 | 2.8M |
 
 错误主要是视频 decode/ffmpeg packet 错误，提取进程已跳过对应样本并完成。注意输出目录名沿用早期 `teacher_cache_110k_sharded_256`，但本轮实际命令使用 `--shard_size 512`。
+
+训练该 cache 时必须带：
+
+```bash
+--cache_shard_size 512
+```
+
+一次单进程索引验证结果：`TeacherCacheDataset` 长度 `102952`，耗时约 90 秒，峰值 RSS 约 37GB。cache 体积大的原因是每条样本保存了多段 dense vision embedding（典型 8 段，每段约 `1440×3584×bf16 ≈ 10MB`）。
 
 ## 文件结构
 
