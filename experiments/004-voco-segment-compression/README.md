@@ -71,6 +71,17 @@ loss = CrossEntropy(logits[answer_positions], answer_token_ids)
 - **提取支持安全 resume**：`extract_teacher.py --resume` 用 `global_idx` 跳过已完成样本，`ShardWriter` 从每个 rank 现有最大 shard 编号之后继续写，避免重启覆盖旧 shard
 - **大 shard 训练必须显式传 `--cache_shard_size`**：110K cache 约 3.9T，若初始化时逐个 `torch.load` 全部 shard，会在 8 个 rank 上重复扫描并耗尽内存；`--cache_shard_size 512` 只读取每组最后一个 shard 来计数
 
+### SSD cache 清理记录（gpu8, 2026-05-17）
+
+为释放 jiagpu8 本地 SSD 空间，已按用户确认删除两份 10K 旧 cache：
+
+| 路径 | 大小 | 原因 |
+|------|-----:|------|
+| `/nvmessd/lifanhong/video/teacher_cache_10k_sharded/` | 151G | 旧的不完整 shard 版，仅 7 个 shard；与 `teacher_cache_10k_sharded_v2` 前 7 个 shard 同名同大小 |
+| `/nvmessd/lifanhong/video/teacher_cache_10k/` | 228G | 原始单样本小文件 cache，当前训练/评测不再使用 |
+
+保留 `/nvmessd/lifanhong/video/teacher_cache_10k_sharded_v2/`（10 个 shard, 228G），这是 README 和训练命令当前使用的 10K shard cache。删除后 `/nvmessd` 可用空间约从 1.4T 增至 1.8T；当前 110K B-1L 训练仍在运行。
+
 ### 生成 shard cache
 
 直接提取为 shard：
