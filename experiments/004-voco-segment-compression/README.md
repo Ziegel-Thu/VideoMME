@@ -186,15 +186,13 @@ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 \
 
 | 项目 | 数值 |
 |------|-----:|
-| resolve 后 per-rank 进度 | 13370/13370 |
-| 成功样本 | 13194 |
-| 跳过样本 | 0 |
-| 错误样本 | 176 |
+| 最终可训练 cache 样本数 | 102952 |
+| 日志 per-rank 进度 | 13370/13370 |
 | shard 数 | 203 |
 | cache 大小 | 3.9T |
 | log 大小 | 2.8M |
 
-错误主要是视频 decode/ffmpeg packet 错误，提取进程已跳过对应样本并完成。注意输出目录名沿用早期 `teacher_cache_110k_sharded_256`，但本轮实际命令使用 `--shard_size 512`。
+最终口径以 shard cache 可索引样本数为准：`TeacherCacheDataset` 长度 `102952`。日志中的 `success=13194, error=176` 是 rank 本地进度摘要，不作为全局样本数。错误主要是视频 decode/ffmpeg packet 错误，提取进程已跳过对应样本并完成。注意输出目录名沿用早期 `teacher_cache_110k_sharded_256`，但本轮实际命令使用 `--shard_size 512`。
 
 训练该 cache 时必须带：
 
@@ -202,7 +200,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 \
 --cache_shard_size 512
 ```
 
-一次单进程索引验证结果：`TeacherCacheDataset` 长度 `102952`，耗时约 90 秒，峰值 RSS 约 37GB。cache 体积大的原因是每条样本保存了多段 dense vision embedding（典型 8 段，每段约 `1440×3584×bf16 ≈ 10MB`）。
+一次单进程索引验证耗时约 90 秒，峰值 RSS 约 37GB。cache 体积大的原因是每条样本保存了多段 dense vision embedding（典型 8 段，每段约 `1440×3584×bf16 ≈ 10MB`）。
 
 ### 110K 旧版 B-1L compressor 训练（gpu8, 2026-05-17）
 
