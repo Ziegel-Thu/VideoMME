@@ -280,7 +280,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 \
 | 输出目录 | `/nvmessd/lifanhong/video/outputs_compressor_110k_B1L_old_3gpu_0_6_7_resume_e4/` |
 | 日志 | `/nvmessd/lifanhong/video/log_train_compressor_110k_B1L_old_3gpu_0_6_7_resume_e4.txt` |
 | 目标 | `--epochs 4`，即从 epoch1 续训 epoch2-4 |
-| 当前状态 | 已恢复到 `start_epoch=1, global_step=34318`，进入 `Epoch 2/4`，最新人工检查到 step 59884；已保存到 `compressor_e2_s59000.pt`；日志未见 OOM/Traceback |
+| 当前状态 | 已恢复到 `start_epoch=1, global_step=34318`，进入 `Epoch 2/4`，最新人工检查到 step 62486；已保存到 `compressor_e2_s62000.pt`；日志未见 OOM/Traceback |
 
 注意：必须继续使用显式 env Python 启动，不能用 `conda run -n video torchrun`；后者曾调用 base Python，导致 `transformers` 导入失败。第一轮 4 卡试跑到 step 128 后按用户要求停止，切到 8 卡重新跑；8 卡也未产生可 resume 的 checkpoint，因此当前 4 卡 fallback 从头开始。用户已决定：B-1L epoch1 完成后暂停，不继续 epoch2/3，改跑 110K B-2L 容量测试。
 
@@ -336,7 +336,7 @@ B-2L 实际启动记录（gpu8, 2026-05-17）：
 | 输出目录 | `/nvmessd/lifanhong/video/outputs_compressor_110k_B2L_old_4gpu_1_4_resume_e23/` |
 | 日志 | `/nvmessd/lifanhong/video/log_train_compressor_110k_B2L_old_4gpu_1_4_resume_e23.txt` |
 | 目标 | `--epochs 3`，即从 epoch1 续训 epoch2-3 |
-| 当前状态 | 已恢复到 `start_epoch=1, global_step=25738`，进入 `Epoch 2/3`，最新人工检查到 step 36092；已保存到 `compressor_e2_s36000.pt`；日志未见 OOM/Traceback |
+| 当前状态 | 已恢复到 `start_epoch=1, global_step=25738`，进入 `Epoch 2/3`，最新人工检查到 step 38347；已保存到 `compressor_e2_s38000.pt`；日志未见 OOM/Traceback |
 
 jiagpu4 数据同步记录（2026-05-18）：
 
@@ -346,8 +346,8 @@ jiagpu4 数据同步记录（2026-05-18）：
 | tmux session | `sync-110k-cache-first50-gpu4` |
 | 日志 | `/nvmessd/lifanhong/video/log_sync_110k_cache_first50_to_jiagpu4.txt` |
 | 目标目录 | `jiagpu4:/nvmessd/lifanhong/video/teacher_cache_110k_sharded_256/` |
-| 当前状态 | first50 已完成 50/50 个 `.pt`，远端目录约 961G；日志未见错误 |
-| 策略 | 当前处于 1 小时休息窗口，已安排随后单路同步第 51-100 个 shard；不并发，不使用 `--delete` |
+| 当前状态 | first50 已完成 50/50 个 `.pt`，远端目录约 961G；第 51-100 个 shard 已启动同步，当前约 70%（远端 83 个 `.pt`，约 1.7T），日志未见错误 |
+| 策略 | 当前第 51-100 个 shard 单路同步中；不并发，不使用 `--delete` |
 
 ## 文件结构
 
