@@ -263,7 +263,8 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 \
 | epoch1 checkpoint | `/nvmessd/lifanhong/video/outputs_compressor_110k_B1L_old_4gpu_shardhint/compressor_epoch1.pt` |
 | epoch1 avg_loss | `1.214154`（`total_segs=196099`） |
 | epoch1 完成时间 | 2026-05-17 17:10 |
-| epoch1 quick eval | 110K test split 前 200 条：66.00%（132/200），日志 `/nvmessd/lifanhong/video/log_eval_compressor_110k_B1L_epoch1_gpu4_200.txt` |
+| epoch1 quick eval (0-30 前 200) | 71.50%（143/200），日志 `/nvmessd/lifanhong/video/log_eval_compressor_110k_B1L_epoch1_gpu4_0_30_200.txt` |
+| epoch1 quick eval (0-60 前 200) | 66.00%（132/200），日志 `/nvmessd/lifanhong/video/log_eval_compressor_110k_B1L_epoch1_gpu4_200.txt` |
 | 当前策略 | B-1L 在进入 epoch2 后已暂停，切换 B-2L |
 | 监控 | schedule 每 20 分钟检查 epoch1 是否完成 |
 
