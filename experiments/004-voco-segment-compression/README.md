@@ -446,6 +446,14 @@ CUDA_VISIBLE_DEVICES=4,5,6,7 conda run --no-capture-output -n video torchrun --n
 | BD-1L | - | - | 69.5% | - | - |
 | B-1L + inter-seg 1L | 66.5% | 62.0% | 62.5% | - | - |
 
+### Compressor 10K / 0-30 全量 test 结果
+
+旧表中的 10K B-1L epoch3 checkpoint 已从 jiagpu7 拷贝到 gpu8：`/nvmessd/lifanhong/video/outputs_compressor_1L/compressor_epoch3.pt`。在同一份 `visual_qa_v3_0_60_test.jsonl` 上仅使用 `0_30_s_academic_v0_1` 视频目录，`--max_samples 0` 覆盖 1835 条 0-30 test 题目。
+
+| 配置 | checkpoint | 准确率 |
+|------|------------|--------|
+| 10K B-1L epoch3 | `outputs_compressor_1L/compressor_epoch3.pt` | 67.47%（1238/1835） |
+
 结论：
 - **B-1L 在 epoch3 达到峰值 71.0%，epoch4/5 略降到 67.5-68.5%**，说明 10K 数据已饱和，继续训有轻微过拟合
 - **D-1L 基本持平**（63.0% → 65.0% → 62.5%），D loss 效果始终不如 B
