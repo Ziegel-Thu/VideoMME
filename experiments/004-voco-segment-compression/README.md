@@ -280,7 +280,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 \
 | 输出目录 | `/nvmessd/lifanhong/video/outputs_compressor_110k_B1L_old_3gpu_0_6_7_resume_e4/` |
 | 日志 | `/nvmessd/lifanhong/video/log_train_compressor_110k_B1L_old_3gpu_0_6_7_resume_e4.txt` |
 | 目标 | `--epochs 4`，即从 epoch1 续训 epoch2-4 |
-| 当前状态 | 已恢复到 `start_epoch=1, global_step=34318`，进入 `Epoch 2/4`，最新人工检查到 step 43283；已保存到 `compressor_e2_s43000.pt`；日志未见 OOM/Traceback |
+| 当前状态 | 已恢复到 `start_epoch=1, global_step=34318`，进入 `Epoch 2/4`，最新人工检查到 step 46412；已保存到 `compressor_e2_s46000.pt`；日志未见 OOM/Traceback |
 
 注意：必须继续使用显式 env Python 启动，不能用 `conda run -n video torchrun`；后者曾调用 base Python，导致 `transformers` 导入失败。第一轮 4 卡试跑到 step 128 后按用户要求停止，切到 8 卡重新跑；8 卡也未产生可 resume 的 checkpoint，因此当前 4 卡 fallback 从头开始。用户已决定：B-1L epoch1 完成后暂停，不继续 epoch2/3，改跑 110K B-2L 容量测试。
 
@@ -312,6 +312,19 @@ B-2L 实际启动记录（gpu8, 2026-05-17）：
 | 数据量 | `TeacherCacheDataset: 102952` |
 | 当前状态 | epoch1 已完成，`avg_loss=1.197505`（`total_segs=196099`），已保存 `compressor_epoch1.pt`；日志未见 OOM/Traceback |
 | 监控口径 | 剩余 eval 只在 GPU0 排队，GPU1-4 保留给 B-2L |
+
+110K B-2L epoch2 resume 记录（gpu8, 2026-05-18 01:01）：
+
+| 项目 | 数值 |
+|------|------|
+| tmux session | `train-110k-b2l-resume-e2-1-4` |
+| GPU | `CUDA_VISIBLE_DEVICES=1,2,3,4` |
+| resume checkpoint | `/nvmessd/lifanhong/video/outputs_compressor_110k_B2L_old_4gpu_1_4_shardhint/compressor_epoch1.pt` |
+| 输出目录 | `/nvmessd/lifanhong/video/outputs_compressor_110k_B2L_old_4gpu_1_4_resume_e2/` |
+| 日志 | `/nvmessd/lifanhong/video/log_train_compressor_110k_B2L_old_4gpu_1_4_resume_e2.txt` |
+| 目标 | `--epochs 2`，即从 epoch1 续训 epoch2 |
+| 当前状态 | 已恢复到 `start_epoch=1, global_step=25738`，进入 `Epoch 2/2`，最新人工检查到 step 25917；日志未见 OOM/Traceback |
+| 时间估计 | 按启动后速度，epoch2 预计约 2026-05-18 06:05 完成；若之后继续跑到 10:00，约还能覆盖 0.7 个 epoch |
 
 ## 文件结构
 
