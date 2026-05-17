@@ -16,32 +16,28 @@
 
 ## 当前正在跑的任务
 
-三台机器在并行提取 110K teacher shard cache：
+当前没有需要继续监控的 110K teacher shard 提取任务。gpu8 单机 8×A40 提取已经完成，tmux `extract-110k` 已退出。
 
-| 机器 | tmux session | 范围 | 卡数 | 代码版本 | 进度 | shard | 速率 |
-|---|---|---|---:|---|---|---:|---|
-| jiagpu8 | `extract-110k` | [0, 55013) | 8 | 新代码 prefetch=1 | 228/6877 per rank | 11 | ~1.7s/it |
-| jiagpu4 | `extract-110k` | [55013, 96000) | 8 | 新代码 prefetch=1 | 304/5124 per rank | 0 | ~4.3s/it |
-| jiagpu5 | `extract-110k` | [96000, 110026) | 3（卡1,2,3） | 旧代码 prefetch=0 | 699/3652 per rank | 6 | ~5.5s/it |
+## 110K teacher shard cache 完成状态
 
-**日志位置**：各机器 `/nvmessd/lifanhong/video/log_extract_teacher_110k.txt`
-**输出位置**：各机器 `/nvmessd/lifanhong/video/teacher_cache_110k_sharded_256/`
-**shard 格式**：`teacher_shard_rank{N}_{idx:03d}.pt`，每个 shard 512 条，每条带 `global_idx`
+| 机器 | tmux session | 卡数 | 进度 | 成功 | 跳过 | 错误 | shard | cache 大小 |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| gpu8 | `extract-110k`（已退出） | 8 | 13370/13370 | 13194 | 0 | 176 | 203 | 3.9T |
 
-**jiagpu5 还在跑旧代码（有临时文件 IO），等出下一个整 shard 后应切换新代码 + prefetch=1 --resume**
+**日志位置**：`/nvmessd/lifanhong/video/log_extract_teacher_110k.txt`（2.8M）
+**输出位置**：`/nvmessd/lifanhong/video/teacher_cache_110k_sharded_256/`
+**shard 格式**：`teacher_shard_rank{N}_{idx:03d}.pt`，每个 shard 约 512 条，每条带 `global_idx`
+**说明**：输出目录名沿用早期 `teacher_cache_110k_sharded_256`，实际提取命令使用 `--shard_size 512 --prefetch_workers 0 --resume`。错误样本主要是视频 decode/ffmpeg packet 错误，提取进程已跳过并完成。
 
 ## 当前活跃 schedule
 
-- **#19**（每 3 分钟）：检查三台提取进度、内存、崩溃
+- 无。110K 提取完成后应停止相关监控 schedule。
 
 ## 提取完成后要做的事
 
-1. 把 jiagpu4/jiagpu5 的 shard rsync 到 gpu8（或训练用的机器）
-   - jiagpu5 已有持续 rsync（tmux session `rsync-to-gpu8` on jiagpu5）
-   - jiagpu4 还没有 rsync，出 shard 后需要启动
-2. 验证 shard 总样本数 ≈ 110026
-3. 更新 README 记录提取结果
-4. 启动 110K compressor 训练（B-1L，使用合并后的 shard cache）
+1. 用 `/nvmessd/lifanhong/video/teacher_cache_110k_sharded_256/` 启动 110K compressor 训练（B-1L 优先）。
+2. 训练前按 `CLAUDE.md` 做数据、模型、loss、overfit sanity 检查。
+3. 训练完成后更新 `experiments/004-voco-segment-compression/README.md` 并 commit。
 
 ## 已完成的实验结果
 

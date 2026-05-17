@@ -165,7 +165,34 @@ for split in ["train", "val", "test"]:
 PY
 ```
 
-110K teacher shard cache 只有在上述视频覆盖率接近完整后再提取；推荐 `--shard_size 256`，当前 DDP 写法会产生约 **432** 个 shard 文件。
+### 110K teacher shard cache 提取结果（gpu8, 2026-05-17）
+
+本轮在 gpu8 单机 8×A40 上完成 0-60s train split 的 teacher cache 提取：
+
+```bash
+CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 \
+  /beegfs_hdd/data/nfs_share/users/lifanhong/nishome/miniconda3/envs/video/bin/torchrun \
+  --nproc_per_node=8 --master_port=29543 extract_teacher.py \
+  --data_path /nvmessd/lifanhong/video/parsed/visual_qa_v3_0_60_train.jsonl \
+  --video_dirs /nvmessd/lifanhong/video/llava-video/0_30_s_academic_v0_1,/nvmessd/lifanhong/video/llava-video/30_60_s_academic_v0_1 \
+  --output_dir /nvmessd/lifanhong/video/teacher_cache_110k_sharded_256 \
+  --model_path /nvmessd/lifanhong/.cache/modelscope/Qwen/Qwen2___5-VL-7B-Instruct \
+  --shard_size 512 --prefetch_workers 0 --resume
+```
+
+日志：`/nvmessd/lifanhong/video/log_extract_teacher_110k.txt`
+
+| 项目 | 数值 |
+|------|-----:|
+| resolve 后 per-rank 进度 | 13370/13370 |
+| 成功样本 | 13194 |
+| 跳过样本 | 0 |
+| 错误样本 | 176 |
+| shard 数 | 203 |
+| cache 大小 | 3.9T |
+| log 大小 | 2.8M |
+
+错误主要是视频 decode/ffmpeg packet 错误，提取进程已跳过对应样本并完成。注意输出目录名沿用早期 `teacher_cache_110k_sharded_256`，但本轮实际命令使用 `--shard_size 512`。
 
 ## 文件结构
 
