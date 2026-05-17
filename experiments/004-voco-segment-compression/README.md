@@ -248,10 +248,28 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 \
 | 数据量 | `TeacherCacheDataset: 102952` |
 | 4 卡每 epoch step | `25738` |
 | 8 卡失败点 | epoch1 step 256，local rank 0 `SIGKILL`，无 checkpoint |
-| 4 卡启动确认 | epoch1 已进入 step，最新人工检查到 step 216 |
-| 监控 | schedule `#28` 每 20 分钟检查 |
+| 4 卡启动确认 | epoch1 已进入 step，最新人工检查到 step 15260 |
+| 当前策略 | B-1L 只跑完 epoch1；记录后暂停，切换 B-2L |
+| 监控 | schedule 每 20 分钟检查 epoch1 是否完成 |
 
-注意：必须继续使用显式 env Python 启动，不能用 `conda run -n video torchrun`；后者曾调用 base Python，导致 `transformers` 导入失败。第一轮 4 卡试跑到 step 128 后按用户要求停止，切到 8 卡重新跑；8 卡也未产生可 resume 的 checkpoint，因此当前 4 卡 fallback 从头开始。
+注意：必须继续使用显式 env Python 启动，不能用 `conda run -n video torchrun`；后者曾调用 base Python，导致 `transformers` 导入失败。第一轮 4 卡试跑到 step 128 后按用户要求停止，切到 8 卡重新跑；8 卡也未产生可 resume 的 checkpoint，因此当前 4 卡 fallback 从头开始。用户已决定：B-1L epoch1 完成后暂停，不继续 epoch2/3，改跑 110K B-2L 容量测试。
+
+110K B-2L 容量测试计划（B-1L epoch1 完成并暂停后启动）：
+
+```bash
+tmux new-session -d -s train-110k-b2l-old \
+"cd /beegfs_hdd/data/nfs_share/users/lifanhong/nishome/video/experiments/004-voco-segment-compression && \
+CUDA_VISIBLE_DEVICES=0,1,2,3 \
+/beegfs_hdd/data/nfs_share/users/lifanhong/nishome/miniconda3/envs/video/bin/python \
+-m torch.distributed.run --nproc_per_node=4 --master_port=29545 train_compressor.py \
+--cache_dir /nvmessd/lifanhong/video/teacher_cache_110k_sharded_256 \
+--cache_shard_size 512 \
+--output_dir /nvmessd/lifanhong/video/outputs_compressor_110k_B2L_old_4gpu_shardhint \
+--model_path /nvmessd/lifanhong/.cache/modelscope/Qwen/Qwen2___5-VL-7B-Instruct \
+--K_seg 8 --n_layers 2 --inter_layers 0 --loss_type B \
+--lr 1e-4 --epochs 1 --save_steps 1000 \
+2>&1 | tee /nvmessd/lifanhong/video/log_train_compressor_110k_B2L_old_4gpu_shardhint.txt"
+```
 
 ## 文件结构
 
