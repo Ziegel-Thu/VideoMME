@@ -288,6 +288,18 @@ CUDA_VISIBLE_DEVICES=0,1,2,3,4 \
 2>&1 | tee /nvmessd/lifanhong/video/log_train_compressor_110k_B2L_old_5gpu_shardhint.txt"
 ```
 
+B-2L 实际启动记录（gpu8, 2026-05-17）：
+
+| 项目 | 数值 |
+|------|------|
+| tmux session | `train-110k-b2l-old-1-4` |
+| GPU | `CUDA_VISIBLE_DEVICES=1,2,3,4` |
+| 输出目录 | `/nvmessd/lifanhong/video/outputs_compressor_110k_B2L_old_4gpu_1_4_shardhint/` |
+| 日志 | `/nvmessd/lifanhong/video/log_train_compressor_110k_B2L_old_4gpu_1_4_shardhint.txt` |
+| 数据量 | `TeacherCacheDataset: 102952` |
+| 当前状态 | 已进入 epoch1，保存 `compressor_e1_s1000.pt`、`compressor_e1_s2000.pt`、`compressor_e1_s3000.pt` |
+| 监控口径 | 剩余 eval 只在 GPU0 排队，GPU1-4 保留给 B-2L |
+
 ## 文件结构
 
 ```
