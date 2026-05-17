@@ -298,7 +298,7 @@ B-2L 实际启动记录（gpu8, 2026-05-17）：
 | 输出目录 | `/nvmessd/lifanhong/video/outputs_compressor_110k_B2L_old_4gpu_1_4_shardhint/` |
 | 日志 | `/nvmessd/lifanhong/video/log_train_compressor_110k_B2L_old_4gpu_1_4_shardhint.txt` |
 | 数据量 | `TeacherCacheDataset: 102952` |
-| 当前状态 | 已进入 epoch1，最新人工检查到 step 14659；已保存 `compressor_e1_s1000.pt` 到 `compressor_e1_s14000.pt`；日志未见 OOM/Traceback |
+| 当前状态 | 已进入 epoch1，最新人工检查到 step 15114；已保存 `compressor_e1_s1000.pt` 到 `compressor_e1_s15000.pt`；日志未见 OOM/Traceback |
 | 监控口径 | 剩余 eval 只在 GPU0 排队，GPU1-4 保留给 B-2L |
 
 ## 文件结构
@@ -458,6 +458,8 @@ CUDA_VISIBLE_DEVICES=4,5,6,7 conda run --no-capture-output -n video torchrun --n
 | D-1L | - | - | 63.0% | 65.0% | 62.5% |
 | BD-1L | - | - | 69.5% | - | - |
 | B-1L + inter-seg 1L | 66.5% | 62.0% | 62.5% | - | - |
+
+2026-05-17 复查 10K B-1L epoch1 checkpoint（从 jiagpu7 拷贝到 gpu8 的 `outputs_compressor_1L/compressor_epoch1.pt`）：0-30 前 200 条为 65.50%（131/200），日志 `/nvmessd/lifanhong/video/log_eval_compressor_10k_B1L_epoch1_gpu0_0_30_200.txt`。
 
 ### Compressor 10K / 0-30 全量 test 结果
 
