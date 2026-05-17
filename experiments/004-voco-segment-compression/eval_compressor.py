@@ -42,6 +42,13 @@ def get_inner(base_model):
     return m
 
 
+def get_checkpoint_config(ckpt):
+    K_seg = ckpt.get("K_seg", 8)
+    n_layers = ckpt.get("n_layers", 1)
+    inter_layers = ckpt.get("inter_layers", 0) or 0
+    return K_seg, n_layers, inter_layers
+
+
 def eval_compressor(args):
     device = torch.device("cuda")
 
@@ -60,9 +67,7 @@ def eval_compressor(args):
 
     # 加载 compressor
     ckpt = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
-    K_seg = ckpt.get("K_seg", 8)
-    n_layers = ckpt.get("n_layers", 1)
-    inter_layers = ckpt.get("inter_layers", 0)
+    K_seg, n_layers, inter_layers = get_checkpoint_config(ckpt)
     print(
         f"加载 compressor: K={K_seg}, n_layers={n_layers}, "
         f"inter_layers={inter_layers}"
