@@ -16,6 +16,14 @@
 
 ## 当前正在跑的任务
 
+- gpu8 单机 8×A40 正在跑 110K 旧版 B-1L compressor 蒸馏训练。
+  - tmux session：`train-110k-b1l-old`
+  - 日志：`/nvmessd/lifanhong/video/log_train_compressor_110k_B1L_old_8gpu_shardhint.txt`
+  - 输出：`/nvmessd/lifanhong/video/outputs_compressor_110k_B1L_old_8gpu_shardhint/`
+  - 参数：`K_seg=8, n_layers=1, inter_layers=0, loss_type=B, lr=1e-4, epochs=3, save_steps=1000`
+  - 必须带：`--cache_shard_size 512`
+  - 启动确认：`TeacherCacheDataset: 102952`，epoch1 已进入 step，人工检查到 step 170。
+
 当前没有需要继续监控的 110K teacher shard 提取任务。gpu8 单机 8×A40 提取已经完成，tmux `extract-110k` 已退出。
 
 ## 110K teacher shard cache 完成状态
@@ -31,14 +39,14 @@
 
 ## 当前活跃 schedule
 
-- 无。110K 提取完成后应停止相关监控 schedule。
+- `#27`：每 20 分钟监控 gpu8 110K 旧版 B-1L 8 卡训练。若 OOM 可降回 4 卡，但必须保留 `--cache_shard_size 512` 并从最新 checkpoint resume。
 
-## 提取完成后要做的事
+## 110K 训练注意事项
 
-1. 用 `/nvmessd/lifanhong/video/teacher_cache_110k_sharded_256/` 启动 110K compressor 训练（B-1L 优先）。
-2. 训练命令必须带 `--cache_shard_size 512`，否则每个 rank 初始化时会重复 `torch.load` 全部 3.9T shard cache 并耗尽内存。
-3. 训练前按 `CLAUDE.md` 做数据、模型、loss、overfit sanity 检查。
-4. 训练完成后更新 `experiments/004-voco-segment-compression/README.md` 并 commit。
+1. 训练命令必须带 `--cache_shard_size 512`，否则每个 rank 初始化时会重复 `torch.load` 全部 3.9T shard cache 并耗尽内存。
+2. 必须用 env Python 启动：`/beegfs_hdd/data/nfs_share/users/lifanhong/nishome/miniconda3/envs/video/bin/python -m torch.distributed.run`。不要用 `conda run -n video torchrun`，它曾调用 base Python 导致 `transformers` 导入失败。
+3. 第一轮 4 卡训练到 step 128 后按用户要求停止切换 8 卡，没有生成 checkpoint；当前 8 卡输出目录是新的 `_8gpu_shardhint`。
+4. 第一 epoch 完成后必须先更新 README 并 commit，然后跑 sanity/eval，不要等全部 3 epoch 结束。
 
 ## 已完成的实验结果
 
@@ -56,7 +64,7 @@
 
 ## 后续计划（按优先级）
 
-1. **110K 蒸馏训练**（等 cache 提取完）
+1. **110K 蒸馏训练**（gpu8 8 卡正在跑，第一 epoch 后先评测）
 2. **段间 cross-attention**：压缩后的段间信息交互
 3. **端到端 NLL 训练**：用 cache 中的 dense segments + compressor + frozen LLM → NLL(answer)
 4. **Temporal Head**（Stage 3）
@@ -79,7 +87,7 @@
   - `llava-video/0_30_s_academic_v0_1/`：12139 个 mp4
   - `llava-video/30_60_s_academic_v0_1/`：10503 个 mp4
   - `parsed/visual_qa_v3_0_60_{train,val,test}.jsonl`
-  - `teacher_cache_110k_sharded_256/`：正在提取的 110K cache
+  - `teacher_cache_110k_sharded_256/`：已完成的 110K teacher cache（203 shards, 3.9T）
 - **模型**：`/nvmessd/lifanhong/.cache/modelscope/Qwen/Qwen2___5-VL-7B-Instruct`
 
 ## 监控方法
