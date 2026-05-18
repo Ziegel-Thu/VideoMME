@@ -371,6 +371,18 @@ jiagpu4 checkpoint 同步记录（2026-05-18 11:48）：
 | B-2L | `outputs_compressor_110k_B2L_old_4gpu_1_4_shardhint/compressor_epoch1.pt`；`outputs_compressor_110k_B2L_old_4gpu_1_4_resume_e23/compressor_epoch2.pt`；`outputs_compressor_110k_B2L_old_4gpu_1_4_resume_e23/compressor_e3_s60000.pt` |
 | 当前状态 | 已同步到 `jiagpu4:/nvmessd/lifanhong/video/` 并保留原目录结构；共 6 个文件，约 7.8G；远端文件大小逐个匹配 |
 
+jiagpu4 B-1L 续训记录（2026-05-18 16:28）：
+
+| 项目 | 数值 |
+|------|------|
+| tmux session | `train-110k-b1l-jiagpu4-resume-e4` |
+| GPU | `CUDA_VISIBLE_DEVICES=1,2,3` |
+| resume checkpoint | `/nvmessd/lifanhong/video/outputs_compressor_110k_B1L_old_3gpu_0_6_7_resume_e4/compressor_e3_s89000.pt` |
+| 输出目录 | `/nvmessd/lifanhong/video/outputs_compressor_110k_B1L_jiagpu4_3gpu_1_3_resume_e4/` |
+| 日志 | `/nvmessd/lifanhong/video/log_train_compressor_110k_B1L_jiagpu4_3gpu_1_3_resume_e4.txt` |
+| epoch3 | 已完成，`avg_loss=0.749057`，`total_segs=106383`，结束于 `global_step=102954`，保存 `compressor_epoch3.pt`（925402842 bytes，2026-05-18 16:09） |
+| 当前状态 | 已进入 `Epoch 4/4`，16:28 巡检到约 `step=104451`，最新 step checkpoint 为 `compressor_e4_s104000.pt`；GPU1/2/3 正在训练，日志未见 OOM/Traceback/RuntimeError |
+
 ## 文件结构
 
 ```
