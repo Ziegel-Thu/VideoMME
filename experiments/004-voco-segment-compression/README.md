@@ -399,7 +399,8 @@ jiagpu4 B-2L 续训记录（2026-05-18 16:50）：
 | 日志 | `/nvmessd/lifanhong/video/log_train_compressor_110k_B2L_jiagpu4_4gpu_1_2_3_7_resume_e3.txt` |
 | 参数 | `K_seg=8`，`n_layers=2`，`inter_layers=0`，`loss_type=B`，`lr=1e-4`，`--epochs 3`，`--save_steps 1000`，`--cache_shard_size 512` |
 | resume 位置 | checkpoint 内 `epoch=3`、`step=60000`；4 卡每 epoch `25738` step，因此恢复为 `start_epoch=2`、`skip_steps=8524`、`global_step=51476`，保持 4 卡 world size 以匹配原训练步数 |
-| 当前状态 | 已进入 `Epoch 3/3`，16:52 巡检到 skip/resume 进度已开始推进；日志未见 OOM/Traceback/RuntimeError |
+| 当前状态 | epoch3 已完成，`avg_loss=0.760557`，`total_segs=131089`，checkpoint `compressor_epoch3.pt`（1.8G，2026-05-18 21:42）；训练正常结束 |
+| epoch3 eval | 已在 GPU1/2/3/7 启动 4 路并行 eval：0-30 前200 / 0-60 前200 / 0-30 全量 / 0-60 全量 |
 
 ### 110K Compressor Quick Eval 汇总（0-30 / 0-60，前 200 条）
 
