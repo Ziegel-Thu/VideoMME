@@ -382,6 +382,8 @@ jiagpu4 B-1L 续训记录（2026-05-18 16:28）：
 | 日志 | `/nvmessd/lifanhong/video/log_train_compressor_110k_B1L_jiagpu4_3gpu_1_3_resume_e4.txt` |
 | epoch3 | 已完成，`avg_loss=0.749057`，`total_segs=106383`，结束于 `global_step=102954`，保存 `compressor_epoch3.pt`（925402842 bytes，2026-05-18 16:09） |
 | 当前状态 | 已进入 `Epoch 4/4`，16:28 巡检到约 `step=104451`，最新 step checkpoint 为 `compressor_e4_s104000.pt`；GPU1/2/3 正在训练，日志未见 OOM/Traceback/RuntimeError |
+| epoch3 quick eval (0-30 前 200) | 70.00%（140/200），日志 `/nvmessd/lifanhong/video/log_eval_compressor_110k_B1L_epoch3_jiagpu4_gpu4_0_30_200.txt` |
+| epoch3 quick eval (0-60 前 200) | 65.50%（131/200），日志 `/nvmessd/lifanhong/video/log_eval_compressor_110k_B1L_epoch3_jiagpu4_gpu6_0_60_200.txt` |
 
 ## 文件结构
 
