@@ -282,6 +282,18 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 \
 | 目标 | `--epochs 4`，即从 epoch1 续训 epoch2-4 |
 | 当前状态 | 09:00 auto-stop 已触发并停止 tmux；epoch2 已完成，`avg_loss=0.907225`（`total_segs=261456`），已保存 `compressor_epoch2.pt`；停止前处于 `Epoch 3/4`，最终日志 step 89505，最新 checkpoint 为 `compressor_e3_s89000.pt`；日志未见 OOM/Traceback |
 
+B-1L jiagpu4 三卡续训记录（2026-05-18 12:31）：
+
+| 项目 | 数值 |
+|------|------|
+| tmux session | `train-110k-b1l-jiagpu4-resume-e4` |
+| GPU | `CUDA_VISIBLE_DEVICES=1,2,3` |
+| resume checkpoint | `/nvmessd/lifanhong/video/outputs_compressor_110k_B1L_old_3gpu_0_6_7_resume_e4/compressor_e3_s89000.pt` |
+| 输出目录 | `/nvmessd/lifanhong/video/outputs_compressor_110k_B1L_jiagpu4_3gpu_1_3_resume_e4/` |
+| 日志 | `/nvmessd/lifanhong/video/log_train_compressor_110k_B1L_jiagpu4_3gpu_1_3_resume_e4.txt` |
+| 目标 | `--epochs 4`，按原 3 卡 world size 从 epoch3 step checkpoint 精确续训到 epoch4 |
+| 启动状态 | 已恢复到 `start_epoch=2, skip_steps=20364, global_step=68636`，进入 `Epoch 3/4`；12:34 检查到正在快速 skip 到 checkpoint 对应位置，日志未见 OOM/Traceback |
+
 注意：必须继续使用显式 env Python 启动，不能用 `conda run -n video torchrun`；后者曾调用 base Python，导致 `transformers` 导入失败。第一轮 4 卡试跑到 step 128 后按用户要求停止，切到 8 卡重新跑；8 卡也未产生可 resume 的 checkpoint，因此当前 4 卡 fallback 从头开始。用户已决定：B-1L epoch1 完成后暂停，不继续 epoch2/3，改跑 110K B-2L 容量测试。
 
 110K B-2L 容量测试计划（B-1L epoch1 完成并暂停后启动，使用当前空闲的 gpu0-4 五张 A40）：
