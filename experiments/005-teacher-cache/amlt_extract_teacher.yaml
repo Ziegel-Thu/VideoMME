@@ -1,0 +1,79 @@
+description: "110K Teacher Cache 提取 - 4 job 并行 (每 job 4×A100, shard_size=512)"
+
+target:
+  service: sing
+  name: msrresrchbasicvc
+  workspace_name: msraairwsws
+
+environment:
+  image: amlt-sing/2.5.0-cuda12.4-cudnn9-devel
+  setup:
+    - pip install transformers==4.57.6 peft accelerate qwen-vl-utils decord pillow
+
+code:
+  local_dir: $CONFIG_DIR
+
+jobs:
+  - name: extract-teacher-110k-part0
+    sku: 80G4-A100-NvLink
+    sla_tier: standard
+    command:
+      - >-
+        torchrun --nproc_per_node=4 extract_teacher.py
+        --data_path /mnt/default/bottleneck/data/parsed/visual_qa_v3_60s_train.jsonl
+        --video_dirs /mnt/default/bottleneck/data/videos/0_30_s_academic_v0_1,/mnt/default/bottleneck/data/videos/30_60_s_academic_v0_1
+        --output_dir /mnt/default/bottleneck/teacher_cache_110k
+        --model_path Qwen/Qwen2.5-VL-7B-Instruct
+        --start_idx 0 --end_idx 27500
+        --shard_size 512
+        --fps 1.0 --frames_per_segment 2 --max_frames 30
+        --prefetch_workers 0 --resume
+        2>&1 | tee $$AMLT_OUTPUT_DIR/extract_log.txt
+
+  - name: extract-teacher-110k-part1
+    sku: 80G4-A100-NvLink
+    sla_tier: standard
+    command:
+      - >-
+        torchrun --nproc_per_node=4 --master_port=29501 extract_teacher.py
+        --data_path /mnt/default/bottleneck/data/parsed/visual_qa_v3_60s_train.jsonl
+        --video_dirs /mnt/default/bottleneck/data/videos/0_30_s_academic_v0_1,/mnt/default/bottleneck/data/videos/30_60_s_academic_v0_1
+        --output_dir /mnt/default/bottleneck/teacher_cache_110k
+        --model_path Qwen/Qwen2.5-VL-7B-Instruct
+        --start_idx 27500 --end_idx 55000
+        --shard_size 512
+        --fps 1.0 --frames_per_segment 2 --max_frames 30
+        --prefetch_workers 0 --resume
+        2>&1 | tee $$AMLT_OUTPUT_DIR/extract_log.txt
+
+  - name: extract-teacher-110k-part2
+    sku: 80G4-A100-NvLink
+    sla_tier: standard
+    command:
+      - >-
+        torchrun --nproc_per_node=4 --master_port=29502 extract_teacher.py
+        --data_path /mnt/default/bottleneck/data/parsed/visual_qa_v3_60s_train.jsonl
+        --video_dirs /mnt/default/bottleneck/data/videos/0_30_s_academic_v0_1,/mnt/default/bottleneck/data/videos/30_60_s_academic_v0_1
+        --output_dir /mnt/default/bottleneck/teacher_cache_110k
+        --model_path Qwen/Qwen2.5-VL-7B-Instruct
+        --start_idx 55000 --end_idx 82500
+        --shard_size 512
+        --fps 1.0 --frames_per_segment 2 --max_frames 30
+        --prefetch_workers 0 --resume
+        2>&1 | tee $$AMLT_OUTPUT_DIR/extract_log.txt
+
+  - name: extract-teacher-110k-part3
+    sku: 80G4-A100-NvLink
+    sla_tier: standard
+    command:
+      - >-
+        torchrun --nproc_per_node=4 --master_port=29503 extract_teacher.py
+        --data_path /mnt/default/bottleneck/data/parsed/visual_qa_v3_60s_train.jsonl
+        --video_dirs /mnt/default/bottleneck/data/videos/0_30_s_academic_v0_1,/mnt/default/bottleneck/data/videos/30_60_s_academic_v0_1
+        --output_dir /mnt/default/bottleneck/teacher_cache_110k
+        --model_path Qwen/Qwen2.5-VL-7B-Instruct
+        --start_idx 82500 --end_idx 110026
+        --shard_size 512
+        --fps 1.0 --frames_per_segment 2 --max_frames 30
+        --prefetch_workers 0 --resume
+        2>&1 | tee $$AMLT_OUTPUT_DIR/extract_log.txt
