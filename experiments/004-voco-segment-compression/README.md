@@ -349,6 +349,15 @@ jiagpu4 数据同步记录（2026-05-18）：
 | 当前状态 | first50、51-100、101-150、151-200、201-203 均已完成；远端目录共 203 个 `.pt`、约 3.9T；日志未见错误 |
 | 策略 | jiagpu4 110K teacher cache shard 同步完成；最后 201-203 三个 shard 由 `sync-110k-cache-201-203-gpu4` 单路同步，09:38 完成（82.25G，xfr#3/3）；全程不并发，不使用 `--delete` |
 
+jiagpu4 checkpoint 同步记录（2026-05-18 11:48）：
+
+| 项目 | 数值 |
+|------|------|
+| 同步策略 | 完整 epoch checkpoint 全传；未训完的 epoch 只传最后一个 step checkpoint |
+| B-1L | `outputs_compressor_110k_B1L_old_4gpu_shardhint/compressor_epoch1.pt`；`outputs_compressor_110k_B1L_old_3gpu_0_6_7_resume_e4/compressor_epoch2.pt`；`outputs_compressor_110k_B1L_old_3gpu_0_6_7_resume_e4/compressor_e3_s89000.pt` |
+| B-2L | `outputs_compressor_110k_B2L_old_4gpu_1_4_shardhint/compressor_epoch1.pt`；`outputs_compressor_110k_B2L_old_4gpu_1_4_resume_e23/compressor_epoch2.pt`；`outputs_compressor_110k_B2L_old_4gpu_1_4_resume_e23/compressor_e3_s60000.pt` |
+| 当前状态 | 已同步到 `jiagpu4:/nvmessd/lifanhong/video/` 并保留原目录结构；共 6 个文件，约 7.8G；远端文件大小逐个匹配 |
+
 ## 文件结构
 
 ```
