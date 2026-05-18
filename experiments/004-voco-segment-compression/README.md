@@ -347,7 +347,7 @@ jiagpu4 数据同步记录（2026-05-18）：
 | 日志 | `/nvmessd/lifanhong/video/log_sync_110k_cache_first50_to_jiagpu4.txt` |
 | 目标目录 | `jiagpu4:/nvmessd/lifanhong/video/teacher_cache_110k_sharded_256/` |
 | 当前状态 | first50、51-100、101-150、151-200 均已完成；远端目录共 200 个 `.pt`、约 3.9T；日志未见错误 |
-| 策略 | 已安排休息 1 小时后单路同步最后 201-203 三个 shard（约 77G）：`sync-110k-cache-201-203-gpu4`；09:04 仍在 sleep，远端仍 200 个 `.pt`；不并发，不使用 `--delete` |
+| 策略 | 最后 201-203 三个 shard（约 77G）已由 `sync-110k-cache-201-203-gpu4` 单路启动，09:35 约 36%，远端 201 个 `.pt`；不并发，不使用 `--delete` |
 
 ## 文件结构
 
