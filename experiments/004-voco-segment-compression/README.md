@@ -346,8 +346,8 @@ jiagpu4 数据同步记录（2026-05-18）：
 | tmux session | `sync-110k-cache-first50-gpu4` |
 | 日志 | `/nvmessd/lifanhong/video/log_sync_110k_cache_first50_to_jiagpu4.txt` |
 | 目标目录 | `jiagpu4:/nvmessd/lifanhong/video/teacher_cache_110k_sharded_256/` |
-| 当前状态 | first50、51-100、101-150、151-200 均已完成；远端目录共 200 个 `.pt`、约 3.9T；日志未见错误 |
-| 策略 | 最后 201-203 三个 shard（约 77G）已由 `sync-110k-cache-201-203-gpu4` 单路启动，09:35 约 36%，远端 201 个 `.pt`；不并发，不使用 `--delete` |
+| 当前状态 | first50、51-100、101-150、151-200、201-203 均已完成；远端目录共 203 个 `.pt`、约 3.9T；日志未见错误 |
+| 策略 | jiagpu4 110K teacher cache shard 同步完成；最后 201-203 三个 shard 由 `sync-110k-cache-201-203-gpu4` 单路同步，09:38 完成（82.25G，xfr#3/3）；全程不并发，不使用 `--delete` |
 
 ## 文件结构
 
