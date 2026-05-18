@@ -336,7 +336,7 @@ B-2L 实际启动记录（gpu8, 2026-05-17）：
 | 输出目录 | `/nvmessd/lifanhong/video/outputs_compressor_110k_B2L_old_4gpu_1_4_resume_e23/` |
 | 日志 | `/nvmessd/lifanhong/video/log_train_compressor_110k_B2L_old_4gpu_1_4_resume_e23.txt` |
 | 目标 | `--epochs 3`，即从 epoch1 续训 epoch2-3 |
-| 当前状态 | epoch2 已完成，`avg_loss=0.885294`（`total_segs=196099`），已保存 `compressor_epoch2.pt`；当前进入 `Epoch 3/3`，最新人工检查到 step 58925，已保存到 `compressor_e3_s58000.pt`；日志未见 OOM/Traceback |
+| 当前状态 | epoch2 已完成，`avg_loss=0.885294`（`total_segs=196099`），已保存 `compressor_epoch2.pt`；当前进入 `Epoch 3/3`，最新人工检查到 step 59063，已保存到 `compressor_e3_s59000.pt`；日志未见 OOM/Traceback |
 
 jiagpu4 数据同步记录（2026-05-18）：
 
