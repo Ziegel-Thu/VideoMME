@@ -410,16 +410,19 @@ jiagpu4 B-2L 续训记录（2026-05-18 16:50）：
 | B-1L (1层) | 3 | 70.00% (140/200) | 65.50% (131/200) |
 | B-2L (2层) | 1 | **72.00%** (144/200) | **67.50%** (135/200) |
 | B-2L (2层) | 2 | **75.00%** (150/200) | **68.00%** (136/200) |
+| B-2L (2层) | 3 | 73.00% (146/200) | 67.50% (135/200) |
 
 B-2L quick eval 日志：
 - epoch1 0-30: `/nvmessd/lifanhong/video/log_eval_compressor_110k_B2L_epoch1_jiagpu4_gpu4_0_30_200.txt`
 - epoch1 0-60: `/nvmessd/lifanhong/video/log_eval_compressor_110k_B2L_epoch1_jiagpu4_gpu5_0_60_200.txt`
 - epoch2 0-30: `/nvmessd/lifanhong/video/log_eval_compressor_110k_B2L_epoch2_jiagpu4_gpu4_0_30_200.txt`
 - epoch2 0-60: `/nvmessd/lifanhong/video/log_eval_compressor_110k_B2L_epoch2_jiagpu4_gpu5_0_60_200.txt`
+- epoch3 0-30: `/nvmessd/lifanhong/video/log_eval_compressor_110k_B2L_epoch3_jiagpu4_gpu1_0_30_200.txt`
+- epoch3 0-60: `/nvmessd/lifanhong/video/log_eval_compressor_110k_B2L_epoch3_jiagpu4_gpu2_0_60_200.txt`
 
 结论：
 - **B-2L (2层) 全面优于 B-1L (1层)**，epoch2 0-30 达 75.00%，为目前最高
-- B-2L 随 epoch 增加持续改善，epoch1→2 0-30 +3%，0-60 +0.5%
+- B-2L epoch2 为峰值，epoch3 略有回落（0-30: 75→73%，0-60: 68→67.5%），可能开始轻微过拟合
 - B-1L 随 epoch 增加反而略降（epoch1→3 0-30 -1.5%，0-60 -0.5%），显示 1 层容量可能已饱和
 
 ### 110K Full Eval 汇总
