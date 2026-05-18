@@ -400,6 +400,33 @@ jiagpu4 B-2L 续训记录（2026-05-18 16:50）：
 | resume 位置 | checkpoint 内 `epoch=3`、`step=60000`；4 卡每 epoch `25738` step，因此恢复为 `start_epoch=2`、`skip_steps=8524`、`global_step=51476`，保持 4 卡 world size 以匹配原训练步数 |
 | 当前状态 | 已进入 `Epoch 3/3`，16:52 巡检到 skip/resume 进度已开始推进；日志未见 OOM/Traceback/RuntimeError |
 
+### 110K Compressor Quick Eval 汇总（0-30 / 0-60，前 200 条）
+
+| 配置 | epoch | 0-30 前200 | 0-60 前200 |
+|------|-------|-----------|-----------|
+| B-1L (1层) | 1 | 71.50% (143/200) | 66.00% (132/200) |
+| B-1L (1层) | 3 | 70.00% (140/200) | 65.50% (131/200) |
+| B-2L (2层) | 1 | **72.00%** (144/200) | **67.50%** (135/200) |
+| B-2L (2层) | 2 | **75.00%** (150/200) | **68.00%** (136/200) |
+
+B-2L quick eval 日志：
+- epoch1 0-30: `/nvmessd/lifanhong/video/log_eval_compressor_110k_B2L_epoch1_jiagpu4_gpu4_0_30_200.txt`
+- epoch1 0-60: `/nvmessd/lifanhong/video/log_eval_compressor_110k_B2L_epoch1_jiagpu4_gpu5_0_60_200.txt`
+- epoch2 0-30: `/nvmessd/lifanhong/video/log_eval_compressor_110k_B2L_epoch2_jiagpu4_gpu4_0_30_200.txt`
+- epoch2 0-60: `/nvmessd/lifanhong/video/log_eval_compressor_110k_B2L_epoch2_jiagpu4_gpu5_0_60_200.txt`
+
+结论：
+- **B-2L (2层) 全面优于 B-1L (1层)**，epoch2 0-30 达 75.00%，为目前最高
+- B-2L 随 epoch 增加持续改善，epoch1→2 0-30 +3%，0-60 +0.5%
+- B-1L 随 epoch 增加反而略降（epoch1→3 0-30 -1.5%，0-60 -0.5%），显示 1 层容量可能已饱和
+
+### 110K Full Eval 汇总
+
+| 配置 | epoch | 0-30 全量 | 0-60 全量 |
+|------|-------|----------|----------|
+| B-1L (1层) | 1 | 70.08% (1286/1835) | 68.48% (6919/10103) |
+| B-1L (1层) | 3 | 69.86% (1282/1835) | 进行中 (72%, 7306/10103) |
+
 ## 文件结构
 
 ```
