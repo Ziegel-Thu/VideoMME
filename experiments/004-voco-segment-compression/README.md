@@ -360,6 +360,7 @@ jiagpu4 数据同步记录（2026-05-18）：
 | 目标目录 | `jiagpu4:/nvmessd/lifanhong/video/teacher_cache_110k_sharded_256/` |
 | 当前状态 | first50、51-100、101-150、151-200、201-203 均已完成；远端目录共 203 个 `.pt`、约 3.9T；日志未见错误 |
 | 策略 | jiagpu4 110K teacher cache shard 同步完成；最后 201-203 三个 shard 由 `sync-110k-cache-201-203-gpu4` 单路同步，09:38 完成（82.25G，xfr#3/3）；全程不并发，不使用 `--delete` |
+| gpu8 清理 | 确认 jiagpu4 远端 203 个 shard、3.9T 完整，且 jiagpu4 训练正在使用远端 cache 后，已删除 gpu8 本地 `/nvmessd/lifanhong/video/teacher_cache_110k_sharded_256`；gpu8 `/nvmessd` 可用空间从 1.6T 增至 5.4T |
 
 jiagpu4 checkpoint 同步记录（2026-05-18 11:48）：
 
