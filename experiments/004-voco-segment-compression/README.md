@@ -280,7 +280,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 \
 | 输出目录 | `/nvmessd/lifanhong/video/outputs_compressor_110k_B1L_old_3gpu_0_6_7_resume_e4/` |
 | 日志 | `/nvmessd/lifanhong/video/log_train_compressor_110k_B1L_old_3gpu_0_6_7_resume_e4.txt` |
 | 目标 | `--epochs 4`，即从 epoch1 续训 epoch2-4 |
-| 当前状态 | epoch2 已完成，`avg_loss=0.907225`（`total_segs=261456`），已保存 `compressor_epoch2.pt`；当前进入 `Epoch 3/4`，最新人工检查到 step 84807，已保存到 `compressor_e3_s84000.pt`；日志未见 OOM/Traceback |
+| 当前状态 | epoch2 已完成，`avg_loss=0.907225`（`total_segs=261456`），已保存 `compressor_epoch2.pt`；当前进入 `Epoch 3/4`，最新人工检查到 step 87116，已保存到 `compressor_e3_s87000.pt`；日志未见 OOM/Traceback |
 
 注意：必须继续使用显式 env Python 启动，不能用 `conda run -n video torchrun`；后者曾调用 base Python，导致 `transformers` 导入失败。第一轮 4 卡试跑到 step 128 后按用户要求停止，切到 8 卡重新跑；8 卡也未产生可 resume 的 checkpoint，因此当前 4 卡 fallback 从头开始。用户已决定：B-1L epoch1 完成后暂停，不继续 epoch2/3，改跑 110K B-2L 容量测试。
 
@@ -336,7 +336,7 @@ B-2L 实际启动记录（gpu8, 2026-05-17）：
 | 输出目录 | `/nvmessd/lifanhong/video/outputs_compressor_110k_B2L_old_4gpu_1_4_resume_e23/` |
 | 日志 | `/nvmessd/lifanhong/video/log_train_compressor_110k_B2L_old_4gpu_1_4_resume_e23.txt` |
 | 目标 | `--epochs 3`，即从 epoch1 续训 epoch2-3 |
-| 当前状态 | epoch2 已完成，`avg_loss=0.885294`（`total_segs=196099`），已保存 `compressor_epoch2.pt`；当前进入 `Epoch 3/3`，最新人工检查到 step 57065，已保存到 `compressor_e3_s57000.pt`；日志未见 OOM/Traceback |
+| 当前状态 | epoch2 已完成，`avg_loss=0.885294`（`total_segs=196099`），已保存 `compressor_epoch2.pt`；当前进入 `Epoch 3/3`，最新人工检查到 step 58925，已保存到 `compressor_e3_s58000.pt`；日志未见 OOM/Traceback |
 
 jiagpu4 数据同步记录（2026-05-18）：
 
@@ -346,8 +346,8 @@ jiagpu4 数据同步记录（2026-05-18）：
 | tmux session | `sync-110k-cache-first50-gpu4` |
 | 日志 | `/nvmessd/lifanhong/video/log_sync_110k_cache_first50_to_jiagpu4.txt` |
 | 目标目录 | `jiagpu4:/nvmessd/lifanhong/video/teacher_cache_110k_sharded_256/` |
-| 当前状态 | first50、51-100、101-150 均已完成；远端目录共 150 个 `.pt`、约 2.9T；日志未见错误 |
-| 策略 | 第 151-200 个 shard（约 981G）已由 `sync-110k-cache-151-200-gpu4` 单路启动，08:09 约 86%，远端 191 个 `.pt`、约 3.7T；不并发，不使用 `--delete` |
+| 当前状态 | first50、51-100、101-150、151-200 均已完成；远端目录共 200 个 `.pt`、约 3.9T；日志未见错误 |
+| 策略 | 已安排休息 1 小时后单路同步最后 201-203 三个 shard（约 77G）：`sync-110k-cache-201-203-gpu4`；不并发，不使用 `--delete` |
 
 ## 文件结构
 
