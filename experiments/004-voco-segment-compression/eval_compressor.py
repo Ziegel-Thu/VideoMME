@@ -111,7 +111,10 @@ def eval_compressor(args):
             item["_resolved_video"] = video_index[vname]
             resolved.append(item)
     samples = resolved[:args.max_samples] if args.max_samples > 0 else resolved
-    print(f"评测数据: {len(samples)} 条")
+    # 分片：多卡并行评测时每卡只跑自己的分片
+    if args.num_shards > 1:
+        samples = samples[args.shard_id::args.num_shards]
+    print(f"评测数据: {len(samples)} 条 (shard {args.shard_id}/{args.num_shards})")
 
     # ABCD token ids
     abcd_ids = {
@@ -249,5 +252,7 @@ if __name__ == "__main__":
         "--max_samples", type=int, default=200,
         help="评测样本数；设为 0 表示使用完整 test split。",
     )
+    parser.add_argument("--shard_id", type=int, default=0, help="当前分片 ID（从 0 开始）")
+    parser.add_argument("--num_shards", type=int, default=1, help="总分片数；1 表示不分片")
     args = parser.parse_args()
     eval_compressor(args)
