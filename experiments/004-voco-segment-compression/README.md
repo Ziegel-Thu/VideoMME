@@ -385,6 +385,7 @@ jiagpu4 B-1L 续训记录（2026-05-18 16:28）：
 | epoch3 quick eval (0-30 前 200) | 70.00%（140/200），日志 `/nvmessd/lifanhong/video/log_eval_compressor_110k_B1L_epoch3_jiagpu4_gpu4_0_30_200.txt` |
 | epoch3 quick eval (0-60 前 200) | 65.50%（131/200），日志 `/nvmessd/lifanhong/video/log_eval_compressor_110k_B1L_epoch3_jiagpu4_gpu6_0_60_200.txt` |
 | epoch3 full eval (0-30) | 69.86%（1282/1835），日志 `/nvmessd/lifanhong/video/log_eval_compressor_110k_B1L_epoch3_jiagpu4_gpu4_0_30_full.txt` |
+| epoch3 full eval (0-60) | 68.63%（6934/10103），日志 `/nvmessd/lifanhong/video/log_eval_compressor_110k_B1L_epoch3_jiagpu4_gpu6_0_60_full.txt` |
 | 停止记录 | quick eval 较 epoch1 未提升后，按用户要求于 `Epoch 4/4` 约 `step=105850` 停止 B-1L；最新可恢复 step checkpoint 为 `compressor_e4_s105000.pt` |
 
 jiagpu4 B-2L 续训记录（2026-05-18 16:50）：
@@ -425,7 +426,7 @@ B-2L quick eval 日志：
 | 配置 | epoch | 0-30 全量 | 0-60 全量 |
 |------|-------|----------|----------|
 | B-1L (1层) | 1 | 70.08% (1286/1835) | 68.48% (6919/10103) |
-| B-1L (1层) | 3 | 69.86% (1282/1835) | 进行中 (72%, 7306/10103) |
+| B-1L (1层) | 3 | 69.86% (1282/1835) | 68.63% (6934/10103) |
 
 ## 文件结构
 
