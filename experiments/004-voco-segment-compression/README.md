@@ -384,6 +384,20 @@ jiagpu4 B-1L 续训记录（2026-05-18 16:28）：
 | 当前状态 | 已进入 `Epoch 4/4`，16:28 巡检到约 `step=104451`，最新 step checkpoint 为 `compressor_e4_s104000.pt`；GPU1/2/3 正在训练，日志未见 OOM/Traceback/RuntimeError |
 | epoch3 quick eval (0-30 前 200) | 70.00%（140/200），日志 `/nvmessd/lifanhong/video/log_eval_compressor_110k_B1L_epoch3_jiagpu4_gpu4_0_30_200.txt` |
 | epoch3 quick eval (0-60 前 200) | 65.50%（131/200），日志 `/nvmessd/lifanhong/video/log_eval_compressor_110k_B1L_epoch3_jiagpu4_gpu6_0_60_200.txt` |
+| 停止记录 | quick eval 较 epoch1 未提升后，按用户要求于 `Epoch 4/4` 约 `step=105850` 停止 B-1L；最新可恢复 step checkpoint 为 `compressor_e4_s105000.pt` |
+
+jiagpu4 B-2L 续训记录（2026-05-18 16:50）：
+
+| 项目 | 数值 |
+|------|------|
+| tmux session | `train-110k-b2l-jiagpu4-resume-e3` |
+| GPU | `CUDA_VISIBLE_DEVICES=1,2,3,7` |
+| resume checkpoint | `/nvmessd/lifanhong/video/outputs_compressor_110k_B2L_old_4gpu_1_4_resume_e23/compressor_e3_s60000.pt` |
+| 输出目录 | `/nvmessd/lifanhong/video/outputs_compressor_110k_B2L_jiagpu4_4gpu_1_2_3_7_resume_e3/` |
+| 日志 | `/nvmessd/lifanhong/video/log_train_compressor_110k_B2L_jiagpu4_4gpu_1_2_3_7_resume_e3.txt` |
+| 参数 | `K_seg=8`，`n_layers=2`，`inter_layers=0`，`loss_type=B`，`lr=1e-4`，`--epochs 3`，`--save_steps 1000`，`--cache_shard_size 512` |
+| resume 位置 | checkpoint 内 `epoch=3`、`step=60000`；4 卡每 epoch `25738` step，因此恢复为 `start_epoch=2`、`skip_steps=8524`、`global_step=51476`，保持 4 卡 world size 以匹配原训练步数 |
+| 当前状态 | 已进入 `Epoch 3/3`，16:52 巡检到 skip/resume 进度已开始推进；日志未见 OOM/Traceback/RuntimeError |
 
 ## 文件结构
 
