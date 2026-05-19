@@ -71,31 +71,16 @@ def extract_frames(video_path, num_frames):
         return None
 
 
-def resolve_video_path(video_field, task, video_base, extracted_dirs):
-    """根据 task 和 video 字段找到实际视频路径。"""
-    prefix = TASK_VIDEO_PREFIX.get(task, "")
-    
-    # 先在已解压的目录里找
-    for ext_dir in extracted_dirs:
-        # 直接拼
-        candidate = os.path.join(ext_dir, prefix, video_field)
-        if os.path.exists(candidate):
-            return candidate
-        # 加扩展名
-        for ext in [".mp4", ".avi", ".webm", ".mkv"]:
-            candidate = os.path.join(ext_dir, prefix, video_field + ext)
-            if os.path.exists(candidate):
-                return candidate
-    
-    # 在 video_base 下直接找
-    candidate = os.path.join(video_base, prefix, video_field)
-    if os.path.exists(candidate):
-        return candidate
+def resolve_video_path(video_field, task, video_base, video_index):
+    """根据 video 字段在索引中查找实际路径。"""
+    # 直接用文件名查
+    basename = os.path.basename(video_field)
+    if basename in video_index:
+        return video_index[basename]
+    # 加扩展名
     for ext in [".mp4", ".avi", ".webm", ".mkv"]:
-        candidate = os.path.join(video_base, prefix, video_field + ext)
-        if os.path.exists(candidate):
-            return candidate
-    
+        if basename + ext in video_index:
+            return video_index[basename + ext]
     return None
 
 
@@ -299,6 +284,14 @@ def main(args):
         os.makedirs(args.extract_dir, exist_ok=True)
         extracted_dirs.append(args.extract_dir)
     
+    # 建视频文件名索引（启动时扫描一次，避免每次 os.walk）
+    print(f"扫描视频目录 {args.video_base} ...")
+    video_index = {}
+    for root, dirs, files in os.walk(args.video_base):
+        for f in files:
+            video_index[f] = os.path.join(root, f)
+    print(f"  索引 {len(video_index)} 个视频文件")
+    
     # 加载所有 task
     json_files = sorted(glob.glob(os.path.join(args.json_base, "*.json")))
     
@@ -319,7 +312,7 @@ def main(args):
         
         for item in tqdm(data, desc=task, disable=(args.shard_id != 0)):
             video_path = resolve_video_path(
-                item["video"], task, args.video_base, extracted_dirs,
+                item["video"], task, args.video_base, video_index,
             )
             if video_path is None:
                 continue
