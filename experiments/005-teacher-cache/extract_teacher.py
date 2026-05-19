@@ -42,17 +42,24 @@ from model import get_video_embeds, split_into_segments
 class ShardWriter:
     """按 shard_size 将样本聚合保存，避免一条一个小文件。"""
 
-    def __init__(self, output_dir, shard_size=1000, rank=0):
+    def __init__(self, output_dir, shard_size=1000, rank=0, shard_prefix=""):
         self.output_dir = output_dir
         self.shard_size = shard_size
         self.rank = rank
+        self.shard_prefix = shard_prefix
         self.buffer = []
         os.makedirs(output_dir, exist_ok=True)
         self.shard_idx = self._next_shard_idx()
 
+    def _shard_tag(self):
+        if self.shard_prefix:
+            return f"{self.shard_prefix}_rank{self.rank}"
+        return f"rank{self.rank}"
+
     def _next_shard_idx(self):
+        tag = self._shard_tag()
         pattern = os.path.join(
-            self.output_dir, f"teacher_shard_rank{self.rank}_*.pt",
+            self.output_dir, f"teacher_shard_{tag}_*.pt",
         )
         max_idx = -1
         for shard_path in glob.glob(pattern):
@@ -74,7 +81,7 @@ class ShardWriter:
             return None
         shard_path = os.path.join(
             self.output_dir,
-            f"teacher_shard_rank{self.rank}_{self.shard_idx:03d}.pt",
+            f"teacher_shard_{self._shard_tag()}_{self.shard_idx:03d}.pt",
         )
         torch.save(self.buffer, shard_path)
         self.buffer = []
@@ -210,7 +217,8 @@ def main(args):
         if is_main and done_indices:
             print(f"  Resume: 已完成 {len(done_indices)} 条，跳过")
 
-    writer = ShardWriter(args.output_dir, shard_size=args.shard_size, rank=rank)
+    writer = ShardWriter(args.output_dir, shard_size=args.shard_size, rank=rank,
+                         shard_prefix=args.shard_prefix)
 
     # 按 rank 分配样本（在本机范围内交错）
     my_indices = [i for i in range(rank, len(samples), world_size)
@@ -390,6 +398,8 @@ if __name__ == "__main__":
     parser.add_argument("--frames_per_segment", type=int, default=2)
     parser.add_argument("--max_frames", type=int, default=30)
     parser.add_argument("--shard_size", type=int, default=1000)
+    parser.add_argument("--shard_prefix", type=str, default="",
+                        help="shard 文件名前缀，多 job 并行时用于避免文件名冲突")
     parser.add_argument("--prefetch_workers", type=int, default=4,
                         help="后台视频解码线程数，减少 GPU 空等时间")
     args = parser.parse_args()

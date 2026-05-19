@@ -86,10 +86,10 @@ class TeacherCacheDataset(Dataset):
         shard_groups = {}
         for shard_path in shard_files:
             name = os.path.basename(shard_path)
-            if name.startswith("teacher_shard_rank"):
-                group_key = name.split("_", 3)[2]
-            else:
-                group_key = "single"
+            # 支持 teacher_shard_rank0_000.pt 和 teacher_shard_p0_rank0_000.pt
+            import re
+            m = re.search(r'(rank\d+)', name)
+            group_key = m.group(1) if m else "single"
             shard_groups.setdefault(group_key, []).append(shard_path)
 
         for group_key in sorted(shard_groups):
