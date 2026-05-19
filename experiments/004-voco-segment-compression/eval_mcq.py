@@ -240,15 +240,18 @@ def main(args):
 
     if args.max_samples:
         samples = samples[:args.max_samples]
-    print(f"评测数据: {len(samples)} 条")
+    if args.num_shards > 1:
+        samples = samples[args.shard_id::args.num_shards]
+    print(f"评测数据: {len(samples)} 条 (shard {args.shard_id}/{args.num_shards})")
     print(f"方法: logit + gen{' + nll' if args.include_nll else ''}")
     print(f"帧数: {args.num_frames}")
 
     # 统计
     stats = {
         "logit": {"correct": 0, "total": 0, "errors": 0},
-        "gen": {"correct": 0, "total": 0, "errors": 0},
     }
+    if not args.logit_only:
+        stats["gen"] = {"correct": 0, "total": 0, "errors": 0}
     if args.include_nll:
         stats["nll"] = {"correct": 0, "total": 0, "errors": 0}
 
@@ -274,17 +277,18 @@ def main(args):
                 stats["logit"]["errors"] += 1
 
             # 方法 2: generation
-            r2 = eval_generation(model, processor, tokenizer, frames, question, device,
-                                 fps=args.fps)
-            if r2 and r2["pred"]:
-                result["gen_pred"] = r2["pred"]
-                result["gen_text"] = r2["generated_text"]
-                stats["gen"]["total"] += 1
-                if r2["pred"] == gt:
-                    stats["gen"]["correct"] += 1
-            else:
-                result["gen_text"] = r2["generated_text"] if r2 else ""
-                stats["gen"]["errors"] += 1
+            if not getattr(args, 'logit_only', False):
+                r2 = eval_generation(model, processor, tokenizer, frames, question, device,
+                                     fps=args.fps)
+                if r2 and r2["pred"]:
+                    result["gen_pred"] = r2["pred"]
+                    result["gen_text"] = r2["generated_text"]
+                    stats["gen"]["total"] += 1
+                    if r2["pred"] == gt:
+                        stats["gen"]["correct"] += 1
+                else:
+                    result["gen_text"] = r2["generated_text"] if r2 else ""
+                    stats["gen"]["errors"] += 1
 
             # 方法 3: NLL（可选）
             if args.include_nll:
@@ -357,5 +361,8 @@ if __name__ == "__main__":
     parser.add_argument("--model_path", type=str,
                         default="Qwen/Qwen2.5-VL-7B-Instruct",
                         help="模型路径（HF name 或本地路径）")
+    parser.add_argument("--shard_id", type=int, default=0, help="当前分片 ID（从 0 开始）")
+    parser.add_argument("--num_shards", type=int, default=1, help="总分片数；1 表示不分片")
+    parser.add_argument("--logit_only", action="store_true", help="只跑 logit 方法，跳过 generation")
     args = parser.parse_args()
     main(args)
