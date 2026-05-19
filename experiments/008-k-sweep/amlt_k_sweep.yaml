@@ -1,0 +1,85 @@
+description: "008 K-sweep: B-2L K=2/4/8/16/32 (110K, 4×A100)"
+
+target:
+  service: sing
+  name: msrresrchbasicvc
+  workspace_name: msraairwsws
+
+environment:
+  image: amlt-sing/2.5.0-cuda12.4-cudnn9-devel
+  setup:
+    - pip install transformers==4.57.6 peft accelerate qwen-vl-utils decord pillow
+
+code:
+  local_dir: $CONFIG_DIR
+
+jobs:
+  - name: k2-b2l
+    sku: 80G4-A100-NvLink
+    sla_tier: standard
+    command:
+      - >-
+        torchrun --nproc_per_node=4 train_compressor.py
+        --cache_dir /mnt/default/bottleneck/teacher_cache_110k_v2
+        --output_dir $$AMLT_OUTPUT_DIR
+        --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct
+        --cache_shard_size 512
+        --K_seg 2 --n_layers 2 --inter_layers 0 --loss_type B
+        --lr 1e-4 --epochs 3 --save_steps 1000
+        2>&1 | tee $$AMLT_OUTPUT_DIR/train_log.txt
+
+  - name: k4-b2l
+    sku: 80G4-A100-NvLink
+    sla_tier: standard
+    command:
+      - >-
+        torchrun --nproc_per_node=4 train_compressor.py
+        --cache_dir /mnt/default/bottleneck/teacher_cache_110k_v2
+        --output_dir $$AMLT_OUTPUT_DIR
+        --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct
+        --cache_shard_size 512
+        --K_seg 4 --n_layers 2 --inter_layers 0 --loss_type B
+        --lr 1e-4 --epochs 3 --save_steps 1000
+        2>&1 | tee $$AMLT_OUTPUT_DIR/train_log.txt
+
+  - name: k8-b2l
+    sku: 80G4-A100-NvLink
+    sla_tier: standard
+    command:
+      - >-
+        torchrun --nproc_per_node=4 train_compressor.py
+        --cache_dir /mnt/default/bottleneck/teacher_cache_110k_v2
+        --output_dir $$AMLT_OUTPUT_DIR
+        --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct
+        --cache_shard_size 512
+        --K_seg 8 --n_layers 2 --inter_layers 0 --loss_type B
+        --lr 1e-4 --epochs 3 --save_steps 1000
+        2>&1 | tee $$AMLT_OUTPUT_DIR/train_log.txt
+
+  - name: k16-b2l
+    sku: 80G4-A100-NvLink
+    sla_tier: standard
+    command:
+      - >-
+        torchrun --nproc_per_node=4 train_compressor.py
+        --cache_dir /mnt/default/bottleneck/teacher_cache_110k_v2
+        --output_dir $$AMLT_OUTPUT_DIR
+        --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct
+        --cache_shard_size 512
+        --K_seg 16 --n_layers 2 --inter_layers 0 --loss_type B
+        --lr 1e-4 --epochs 3 --save_steps 1000
+        2>&1 | tee $$AMLT_OUTPUT_DIR/train_log.txt
+
+  - name: k32-b2l
+    sku: 80G4-A100-NvLink
+    sla_tier: standard
+    command:
+      - >-
+        torchrun --nproc_per_node=4 train_compressor.py
+        --cache_dir /mnt/default/bottleneck/teacher_cache_110k_v2
+        --output_dir $$AMLT_OUTPUT_DIR
+        --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct
+        --cache_shard_size 512
+        --K_seg 32 --n_layers 2 --inter_layers 0 --loss_type B
+        --lr 1e-4 --epochs 3 --save_steps 1000
+        2>&1 | tee $$AMLT_OUTPUT_DIR/train_log.txt

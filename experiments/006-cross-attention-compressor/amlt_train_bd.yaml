@@ -22,7 +22,7 @@ jobs:
         torchrun --nproc_per_node=4 train_compressor.py
         --cache_dir /mnt/default/bottleneck/teacher_cache_110k_v2
         --output_dir $$AMLT_OUTPUT_DIR
-        --model_path Qwen/Qwen2.5-VL-7B-Instruct
+        --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct
         --cache_shard_size 512
         --K_seg 8 --n_layers 1 --inter_layers 0 --loss_type BD
         --lr 1e-4 --epochs 3 --save_steps 1000
