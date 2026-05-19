@@ -294,18 +294,19 @@ def main(args):
             else:
                 stats["logit"]["errors"] += 1
 
-            # 方法 2: generation
-            r2 = eval_generation(model, processor, tokenizer, frames, question, device,
-                                 fps=args.fps)
-            if r2 and r2["pred"]:
-                result["gen_pred"] = r2["pred"]
-                result["gen_text"] = r2["generated_text"]
-                stats["gen"]["total"] += 1
-                if r2["pred"] == gt:
-                    stats["gen"]["correct"] += 1
-            else:
-                result["gen_text"] = r2["generated_text"] if r2 else ""
-                stats["gen"]["errors"] += 1
+            # 方法 2: generation（可选）
+            if not args.logit_only:
+                r2 = eval_generation(model, processor, tokenizer, frames, question, device,
+                                     fps=args.fps)
+                if r2 and r2["pred"]:
+                    result["gen_pred"] = r2["pred"]
+                    result["gen_text"] = r2["generated_text"]
+                    stats["gen"]["total"] += 1
+                    if r2["pred"] == gt:
+                        stats["gen"]["correct"] += 1
+                else:
+                    result["gen_text"] = r2["generated_text"] if r2 else ""
+                    stats["gen"]["errors"] += 1
 
             # 方法 3: NLL（可选）
             if args.include_nll:
@@ -380,5 +381,6 @@ if __name__ == "__main__":
                         help="模型路径（HF name 或本地路径）")
     parser.add_argument("--shard_id", type=int, default=0, help="当前分片 ID（从 0 开始）")
     parser.add_argument("--num_shards", type=int, default=1, help="总分片数；1 表示不分片")
+    parser.add_argument("--logit_only", action="store_true", help="只跑 logit 方法，跳过 generation")
     args = parser.parse_args()
     main(args)
