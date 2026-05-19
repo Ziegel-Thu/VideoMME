@@ -1,6 +1,6 @@
 # VoCo Cross-Attention Compressor 实验汇总
 
-> 最后更新：2026-05-19
+> 最后更新：2026-05-19 16:40
 
 ## Setting
 
@@ -17,20 +17,15 @@
 | **D** | MSE(student KV pool, teacher KV pool) | 直接对齐 KV cache 的 per-layer mean pool |
 | **BD** | B + D | 两者都算 |
 
-## Depth
-
-- **1L**: 1 层 cross-attention
-- **2L**: 2 层 cross-attention
-
 ---
 
-## Baseline
+## 内部 MCQ Baseline
 
 | 方法 | 0-30 (200) | 0-60 (200) | 0-30 全量 (1835) | 0-60 全量 (10103) |
 |------|-----------|-----------|-----------------|------------------|
 | Zero-shot logit | 82.0% | - | **80.65%** (1476) | **79.59%** (8039) |
-
-
+| 003 BN on (110K) | 90.0% | - | - | - |
+| 003 BN off (110K) | 94.4% | - | - | - |
 
 ---
 
@@ -43,8 +38,6 @@
 | D-1L | ep4 | 65.0% |
 | BD-1L | ep3 | 69.5% |
 | B-1L + inter-seg | ep1 | 66.5% |
-
-**结论**: B > BD > B-2L > D；inter-seg 10K 无收益
 
 ---
 
@@ -72,16 +65,50 @@
 
 ---
 
+## 外部 Benchmark
+
+### MVBench（4000 条，20 task，~3413 条视频匹配）
+
+| 模型 | Acc |
+|------|-----|
+| **Zeroshot** | **59.01%** (2014/3413) |
+| B-1L ep1 | 42.22% (1441/3413) |
+| B-2L ep2 | 42.58% (1453/3413) |
+
+### Video-MME Short（900 条，300 视频）
+
+| 模型 | Acc |
+|------|-----|
+| **Zeroshot** | **63.33%** (570/900) |
+| B-1L ep1 | 待跑 |
+| B-2L ep2 | 待跑 |
+
+### NExT-QA（8564 条 test）
+
+视频待下载（Google Drive 需认证）
+
+---
+
 ## 结论
 
 1. **B loss 最优**: B > BD > D（10K: 71% vs 69.5% vs 65%）
-2. **2L > 1L**: quick eval 差距大（75% vs 71.5%），full eval 差距小但一致（68.98% vs 68.63%）
+2. **2L > 1L**: full eval 上 B-2L 全面优于 B-1L（+0.3~0.5%）
 3. **Full eval 各 epoch 差距很小**: B-2L 0-60 全量 68.83%→68.86%→68.98%
-4. **Quick eval 波动大**: 200 条采样不够稳定，full eval 是准确口径
-5. **Inter-seg 10K 无收益**: 66.5% vs 71.0%，110K 待验证
-6. **BD/D 110K 待补**: 只在 10K 上做过
+4. **外部 benchmark gap 更大**: MVBench 压缩后 59%→42%（-17%），比内部 MCQ 80%→69%（-11%）更大
+5. **Inter-seg 10K 无收益**: 66.5% vs 71.0%，110K 训练中
+
+## 进行中
+
+- [ ] 007 inter-seg 110K 训练（ready-hedgehog）
+- [ ] 008 K-sweep 110K 5 个 K 值（5 个独立 experiment）
+- [ ] 009 pooling 110K（intense-goshawk）
+- [ ] 010 gated 110K（loved-ghoul）
+- [ ] 110K ckpt 出来后跑 MVBench + Video-MME + 内部 MCQ eval
 
 ## 下一步
 
-- [x] Zero-shot 全量 eval: 0-30 80.65%, 0-60 79.59%
-- [ ] sweep
+- [ ] 分析 K-sweep 结果，确定最优 K
+- [ ] 009/010 vs 006 架构对比
+- [ ] Video-MME Short B1L/B2L eval
+- [ ] NExT-QA 视频下载 + eval
+- [ ] 011 question-conditioned 实现

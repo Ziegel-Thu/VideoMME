@@ -1,112 +1,78 @@
 # Video 项目总计划
 
-> 最后更新：2026-05-19
+> 最后更新：2026-05-19 16:40
 
-## 当前阶段：Stage 1 段级压缩 + Ablation
+## 当前阶段：Stage 1 段级压缩 + 多架构 Ablation + 外部 Benchmark
 
 ### 基础设施
 
 | 项目 | 状态 |
 |------|------|
 | amlt 环境 | ✅ |
-| Qwen2.5-VL 模型 on blob | ✅ `/mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct/` |
-| Teacher cache 110K (v2) | 🟡 p2c/p3c 补完中 (quick-jackal) |
+| Qwen2.5-VL 模型 on blob | ✅ |
+| Teacher cache 110K v2 | ✅ 完成（200+ shard） |
 | Checkpoint A40→blob | ✅ 25 个 |
-| Zero-shot baseline | ✅ 0-30: 80.65%, 0-60: 79.59% |
-| MVBench on blob | ✅ 17GB |
+| Zero-shot baseline 内部 MCQ | ✅ 0-30: 80.65%, 0-60: 79.59% |
+| MVBench on blob | ✅ 10002 视频 + json |
+| Video-MME Short on blob | ✅ 300 视频 + parquet |
+| NExT-QA | 🟡 标注已上传，视频待下载 |
 
 ---
 
-## 实验执行顺序
+## 实验全景
 
-### 阶段 A：cache 完成后立即执行（自动）
-
-cache 完成标志：quick-jackal p2c + p3c 都 pass 且日志有"提取完成"。
-
-完成后按顺序执行：
-
-#### 1. 007 Inter-Segment Attention
-```
-smoketest → 跑 amlt_train.yaml --max_samples 32 --epochs 1
-10K      → 跑 amlt_train.yaml --max_samples 10000 --epochs 3
-110K     → 跑 amlt_train.yaml 全量
-```
-
-#### 2. 008 K-sweep (K=2/4/8/16/32)
-```
-smoketest → 每个 K 跑 32 样本 1 epoch
-110K     → 跑 amlt_k_sweep.yaml 全量（5 个 job 并行）
-```
-
-#### 3. 009 Pooling Baseline
-```
-smoketest → 32 样本 1 epoch
-110K     → 跑 amlt_train.yaml 全量
-```
-
-#### 4. 010 Gated Compression
-```
-smoketest → 32 样本 1 epoch
-110K     → 跑 amlt_train.yaml 全量
-```
-
-### 阶段 B：阶段 A 结果出来后
-
-#### 5. 008 结果分析
-- 画 K vs Accuracy 曲线
-- 确定后续默认 K 值
-
-#### 6. 009/010 vs 006 对比
-- pooling 下界 vs cross-attention vs gated
-- 量化各架构贡献
-
-#### 7. 014 External Benchmarks
-- MVBench / NExT-QA / Video-MME Short
-- Zero-shot + B-2L best 对比
-
-### 阶段 C：架构探索
-
-#### 8. 011 Question-Conditioned（待讨论后启动）
-#### 9. 012 Adapter Compression（优先级最低）
-#### 10. 013 Temporal Grounding（Stage 3）
+| 编号 | 实验 | 状态 | 110K 训练 |
+|------|------|------|----------|
+| 005 | Teacher Cache | ✅ 完成 | - |
+| 006 | Cross-Attention B/D/BD × 1L/2L | ✅ A40 完成 | A100 复现确认 |
+| 007 | Inter-Segment Attention | 🟢 110K running | ready-hedgehog |
+| 008 | K-sweep (K=2/4/8/16/32) | 🟢 110K 5 job | large-snipe 等 |
+| 009 | Pooling Baseline | 🟢 110K running | intense-goshawk |
+| 010 | Gated Compression | 🟢 110K running | loved-ghoul |
+| 011 | Question-Conditioned | 📝 待实现 | - |
+| 012 | Adapter Compression | 📝 待调研 | - |
+| 013 | Temporal Grounding | 📝 待适配 | - |
+| 014 | External Benchmarks | 🟢 MVBench/VME 已出结果 | - |
 
 ---
 
-## 自动执行规则
+## 外部 Benchmark 结果
 
-1. **每个实验按 smoketest → 10K → 110K 递进**
-   - smoketest 失败 → 修 bug，不往下走
-   - 10K 跑通 → 提交 110K（10K 不需要特别好的结果，只要 loss 在降）
-   - 110K 完成 → full eval 0-30 + 0-60
+### MVBench
 
-2. **提交前检查清单**（CLAUDE.md 第 7 条）
-   - amlt yaml `--dump` 验证通过
-   - model_path 用 blob 路径
-   - prefetch_workers=0
-   - 确认 code_dir 内文件齐全（compressor.py, model.py 等）
+| 模型 | Acc |
+|------|-----|
+| Zeroshot | 59.01% |
+| B-1L ep1 | 42.22% |
+| B-2L ep2 | 42.58% |
 
-3. **结果记录**
-   - 每个实验完成后更新对应 README.md + plan.md
-   - 更新 results_summary.md
-   - git commit + push
+### Video-MME Short
 
-4. **失败处理**
-   - SIGKILL → 检查 OOM 原因，降资源重试
-   - import error → 检查依赖，修代码重提
-   - preempt → 带 --resume 重提（如果支持）
-   - 不自作主张 cancel 正常运行的 job
+| 模型 | Acc |
+|------|-----|
+| Zeroshot | 63.33% |
 
 ---
 
-## Blob 路径汇总
+## 自动执行流程
 
-```
-/mnt/default/bottleneck/
-├── data/parsed/                     # MCQ + temporal jsonl
-├── data/videos/                     # 0-30s + 30-60s 视频
-├── models/Qwen2.5-VL-7B-Instruct/  # frozen LLM
-├── teacher_cache_110k_v2/           # teacher shard cache
-├── checkpoints/006_compressor/      # A40 checkpoint
-├── benchmarks/mvbench/              # MVBench 数据
-└── benchmarks/nextqa/               # (待下载)
-```
+1. 110K 训练 pass → 下载 epoch checkpoint → 上传 blob
+2. 提交 3 个 eval：内部 MCQ + MVBench + Video-MME Short
+3. eval 结果记录到 results_summary.md
+4. 每 15 分钟自动监控
+
+## 待办
+
+### 高优先
+- [ ] 110K 训练完成后 eval（007/008/009/010）
+- [ ] Video-MME Short B1L/B2L eval
+- [ ] K-sweep 结果分析 + 曲线
+
+### 中优先
+- [ ] NExT-QA 视频下载
+- [ ] 011 question-conditioned 实现
+- [ ] 013 temporal head 适配
+
+### 低优先
+- [ ] 012 adapter 调研
+- [ ] CLAUDE.md 更新当前阶段
