@@ -32,7 +32,26 @@ from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
 from PIL import Image
 
 sys.path.insert(0, os.path.dirname(__file__))
-from data import extract_frames
+import decord
+from PIL import Image
+
+
+def extract_frames(video_path, num_frames):
+    """从视频均匀采样 num_frames 帧。"""
+    try:
+        vr = decord.VideoReader(video_path)
+        total = len(vr)
+        fps = vr.get_avg_fps()
+        indices = [min(int(i * total / num_frames), total - 1)
+                   for i in range(num_frames)]
+        frames = [Image.fromarray(vr[idx].asnumpy()) for idx in indices]
+        timestamps = [idx / fps for idx in indices]
+        duration = total / fps
+        return frames, timestamps, duration
+    except Exception as e:
+        print(f"  ⚠️ 视频读取失败 {video_path}: {e}，用黑帧替代")
+        frames = [Image.new("RGB", (224, 224), (0, 0, 0))] * num_frames
+        return frames, [0.0] * num_frames, 1.0
 
 
 def prepare_video_inputs(processor, frames, question, answer_text=None, fps=1.0):
