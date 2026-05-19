@@ -182,3 +182,20 @@ amlt 集群: `/mnt/default/bottleneck/checkpoints/006/`
 - B-1L 容量已饱和，多训反而略降
 - B loss 始终优于 D loss
 - Zero-shot baseline（logit 方法）：82%（不经过压缩的上界）
+
+---
+
+## 计划
+
+### 待做
+- [ ] 110K BD-1L 训练（amlt yaml 已就绪：`amlt_train_bd.yaml`）
+- [ ] B-2L epoch2 full eval 补跑（quick eval 峰值 75%，full eval 缺失）
+- [ ] 用 blob 上的 checkpoint 在 amlt 集群复现 eval
+- [ ] 汇总 B/D/BD × 1L/2L 完整结果表
+
+### 已完成
+- [x] Sanity test 在 A100 集群跑通（complete-bluegill）
+- [x] 10K B/D/BD/B-2L pilot
+- [x] 110K B-1L 3 epoch + full eval
+- [x] 110K B-2L 3 epoch + full eval
+- [x] Checkpoint 迁移到 blob（25 个）

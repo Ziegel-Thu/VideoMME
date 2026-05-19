@@ -127,3 +127,18 @@ python pack_teacher_cache.py \
 | shard 数 | 203 |
 | cache 大小 | 3.9TB |
 | 错误 | 176（视频 decode 错误，已跳过） |
+
+---
+
+## 计划
+
+### 待做
+- [ ] p2/p3 补完（leading-jay 运行中）
+- [ ] 补完后验证总样本数（目标 ~103K，对齐 A40 的 102952）
+- [ ] 清理旧的 teacher_cache_110k 脏数据（已清理）
+
+### 已完成
+- [x] 6 job 并行提取框架（frank-terrier）
+- [x] shard_prefix 修复文件名冲突
+- [x] p0/p1/p4/p5 提取完成
+- [x] p2/p3 第一轮部分完成（28 shard each）

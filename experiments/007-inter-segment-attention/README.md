@@ -78,3 +78,17 @@ torchrun --nproc_per_node=4 train_compressor.py \
 
 - inter_layers=1 vs 2
 - 与 B-2L compressor 搭配（n_layers=2 + inter_layers=1）
+
+---
+
+## 计划
+
+### 待做
+- [ ] 110K B-1L + inter_layers=1 训练（amlt yaml 已就绪：`amlt_train.yaml`）
+- [ ] 等 teacher cache p2/p3 补完后提交
+- [ ] 110K 完成后 full eval（0-30 + 0-60）
+- [ ] 与 006 B-1L 对照：验证段间交互在大数据量上是否有收益
+
+### 已完成
+- [x] 10K pilot：B-1L + inter-seg 1L → 66.5%（无收益）
+- [x] Checkpoint 迁移到 blob

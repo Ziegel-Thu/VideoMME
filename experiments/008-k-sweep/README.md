@@ -57,3 +57,19 @@ torchrun --nproc_per_node=4 train_compressor.py \
 ## 实验记录
 
 （待填）
+
+---
+
+## 计划
+
+### 待做
+- [ ] 等 teacher cache p2/p3 补完后提交 5 个 K 值训练（amlt yaml 已就绪：`amlt_k_sweep.yaml`）
+- [ ] 每个 K 值跑 3 epoch，取 best epoch
+- [ ] Full eval 0-30 + 0-60
+- [ ] 画 K vs Accuracy 曲线，找最优压缩率
+- [ ] 结合 K-sweep 结果决定后续实验的默认 K 值
+
+### 预期
+- K 增大 → 精度提升但压缩比降低
+- K=32 应该接近 003 BN（压缩比 12.5:1 vs 13.5:1），验证 cross-attention 是否能匹配 bottleneck
+- K=2 是极端压缩，看下界在哪
