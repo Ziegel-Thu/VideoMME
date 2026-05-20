@@ -1,0 +1,12 @@
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s]Loading checkpoint shards:  20%|██        | 1/5 [00:44<02:56, 44.02s/it]Loading checkpoint shards:  40%|████      | 2/5 [01:26<02:09, 43.07s/it]Loading checkpoint shards:  60%|██████    | 3/5 [02:11<01:27, 43.78s/it]Loading checkpoint shards:  80%|████████  | 4/5 [02:52<00:42, 42.97s/it]Loading checkpoint shards: 100%|██████████| 5/5 [03:35<00:00, 42.76s/it]Loading checkpoint shards: 100%|██████████| 5/5 [03:35<00:00, 43.03s/it]
+The image processor of type `Qwen2VLImageProcessor` is now loaded as a fast processor by default, even if the model checkpoint was saved with a slow processor. This is a breaking change and may produce slightly different outputs. To continue using the slow processor, instantiate this class with `use_fast=False`. Note that this behavior will be extended to all models in a future release.
+Video-MME Short: 900 条, 300 视频
+
+Video-MME Short 总准确率: 60.44% (136/225)
+  Artistic Performance: 66.67% (20/30)
+  Film & Television: 60.00% (18/30)
+  Knowledge: 58.82% (40/68)
+  Life Record: 66.04% (35/53)
+  Multilingual: 28.57% (2/7)
+  Sports Competition: 56.76% (21/37)

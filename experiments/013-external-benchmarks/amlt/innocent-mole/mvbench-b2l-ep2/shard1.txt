@@ -1,0 +1,29 @@
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s]Loading checkpoint shards:  20%|██        | 1/5 [00:05<00:20,  5.05s/it]Loading checkpoint shards:  40%|████      | 2/5 [00:08<00:12,  4.19s/it]Loading checkpoint shards:  60%|██████    | 3/5 [00:12<00:07,  3.83s/it]Loading checkpoint shards:  80%|████████  | 4/5 [00:15<00:03,  3.65s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:17<00:00,  3.19s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:17<00:00,  3.56s/it]
+The image processor of type `Qwen2VLImageProcessor` is now loaded as a fast processor by default, even if the model checkpoint was saved with a slow processor. This is a breaking change and may produce slightly different outputs. To continue using the slow processor, instantiate this class with `use_fast=False`. Note that this behavior will be extended to all models in a future release.
+Compressor: K=8, n_layers=2, inter_layers=0
+扫描视频目录 /mnt/default/bottleneck/benchmarks/mvbench/videos ...
+  索引 3816 个视频文件
+  action_antonym: 80.00% (4/5)
+  action_count: 46.00% (23/50)
+  action_localization: 36.00% (18/50)
+  action_prediction: 36.00% (18/50)
+  action_sequence: 50.00% (25/50)
+  character_order: 38.00% (19/50)
+  counterfactual_inference: 44.00% (22/50)
+  egocentric_navigation: 32.00% (16/50)
+  episodic_reasoning: 0.00% (0/0)
+  fine_grained_action: 34.00% (17/50)
+  fine_grained_pose: 0.00% (0/0)
+  moving_attribute: 34.00% (17/50)
+  moving_count: 22.00% (11/50)
+  moving_direction: 20.00% (10/50)
+  object_existence: 42.00% (21/50)
+  object_interaction: 42.00% (21/50)
+  object_shuffle: 44.00% (22/50)
+  scene_transition: 94.00% (47/50)
+  state_change: 32.00% (16/50)
+  unexpected_action: 70.00% (35/50)
+
+MVBench 总准确率: 42.34% (362/855)
+  shard 1/4

@@ -1,0 +1,109 @@
+{
+  "total_acc": 41.35514018691589,
+  "total_correct": 354,
+  "total_count": 856,
+  "task_results": {
+    "action_antonym": {
+      "correct": 4,
+      "total": 6,
+      "acc": 66.66666666666666
+    },
+    "action_count": {
+      "correct": 24,
+      "total": 50,
+      "acc": 48.0
+    },
+    "action_localization": {
+      "correct": 14,
+      "total": 50,
+      "acc": 28.000000000000004
+    },
+    "action_prediction": {
+      "correct": 21,
+      "total": 50,
+      "acc": 42.0
+    },
+    "action_sequence": {
+      "correct": 18,
+      "total": 50,
+      "acc": 36.0
+    },
+    "character_order": {
+      "correct": 17,
+      "total": 50,
+      "acc": 34.0
+    },
+    "counterfactual_inference": {
+      "correct": 18,
+      "total": 50,
+      "acc": 36.0
+    },
+    "egocentric_navigation": {
+      "correct": 15,
+      "total": 50,
+      "acc": 30.0
+    },
+    "episodic_reasoning": {
+      "correct": 0,
+      "total": 0,
+      "acc": 0.0
+    },
+    "fine_grained_action": {
+      "correct": 18,
+      "total": 50,
+      "acc": 36.0
+    },
+    "fine_grained_pose": {
+      "correct": 0,
+      "total": 0,
+      "acc": 0.0
+    },
+    "moving_attribute": {
+      "correct": 16,
+      "total": 50,
+      "acc": 32.0
+    },
+    "moving_count": {
+      "correct": 28,
+      "total": 50,
+      "acc": 56.00000000000001
+    },
+    "moving_direction": {
+      "correct": 12,
+      "total": 50,
+      "acc": 24.0
+    },
+    "object_existence": {
+      "correct": 20,
+      "total": 50,
+      "acc": 40.0
+    },
+    "object_interaction": {
+      "correct": 19,
+      "total": 50,
+      "acc": 38.0
+    },
+    "object_shuffle": {
+      "correct": 17,
+      "total": 50,
+      "acc": 34.0
+    },
+    "scene_transition": {
+      "correct": 42,
+      "total": 50,
+      "acc": 84.0
+    },
+    "state_change": {
+      "correct": 16,
+      "total": 50,
+      "acc": 32.0
+    },
+    "unexpected_action": {
+      "correct": 35,
+      "total": 50,
+      "acc": 70.0
+    }
+  },
+  "shard_id": 0,
+  "num_shards": 4
+}

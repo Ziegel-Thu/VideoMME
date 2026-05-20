@@ -1,0 +1,14 @@
+2026-05-19 15:33:38,674:amlt-code-runner:INFO - SINGULARITY_LOCATION: northeurope
+2026-05-19 15:33:38,674:amlt-code-runner:INFO - AISC_INSTANCE_TYPE: Singularity.NC96ad_A100_v4
+2026-05-19 15:33:40,116:amlt-code-runner:INFO - Removing AzureML's cd commands from /etc/profile
+2026-05-19 15:33:40,116:amlt-code-runner:INFO - Not removing AzureML's cd commands from /etc/profile due to an error: [Errno 13] Permission denied: '/etc/profile'
+2026-05-19 15:33:40,116:amlt-code-runner:WARNING - Environment variable 'NCCL_SOCKET_IFNAME' already set to 'eth0', not changing to '^docker0,lo'
+2026-05-19 15:33:40,116:amlt-code-runner:INFO - RANK = 0
+2026-05-19 15:33:40,116:amlt-code-runner:INFO - LOCAL_RANK = None
+2026-05-19 15:33:40,116:amlt-code-runner:INFO - WORLD_SIZE = 1
+2026-05-19 15:33:40,116:amlt-code-runner:INFO - MASTER_ADDR = node-0
+2026-05-19 15:33:40,116:amlt-code-runner:INFO - MASTER_PORT = 9500
+2026-05-19 15:33:40,117:amlt-code-runner:WARNING - Installing amlt runtime dependencies: ['wrapt', 'azure-identity', 'python-dateutil', 'pytz'] into /tmp/amlt-user-base
+2026-05-19 15:33:42,821:amlt-code-runner:INFO - Executing ./amlt_setup.sh, ./amlt_run.sh
+2026-05-19 15:33:42,890:background_dirsync:INFO - Starting directory syncer from '/scratch/amlt_code/outputs' to '/mnt/output/projects/bottleneck/amlt-results/7220795931.72013-3521adb4-f096', every 30.000000s
+2026-05-19 15:33:42,896:background_dirsync:INFO - Starting directory syncer from '/scratch/azureml/cr/j/7cd4d3a5092d4f9dac7ef9f00a6b347e/exe/wd/logs' to '/scratch/amlt_code/outputs/logs', every 30.000000s

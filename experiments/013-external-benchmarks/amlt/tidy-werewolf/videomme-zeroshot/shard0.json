@@ -1,0 +1,33 @@
+{
+  "total_acc": 61.77777777777778,
+  "total_correct": 139,
+  "total_count": 225,
+  "domain_stats": {
+    "Knowledge": {
+      "correct": 49,
+      "total": 68
+    },
+    "Film & Television": {
+      "correct": 18,
+      "total": 30
+    },
+    "Sports Competition": {
+      "correct": 23,
+      "total": 37
+    },
+    "Artistic Performance": {
+      "correct": 18,
+      "total": 30
+    },
+    "Life Record": {
+      "correct": 27,
+      "total": 53
+    },
+    "Multilingual": {
+      "correct": 4,
+      "total": 7
+    }
+  },
+  "shard_id": 0,
+  "num_shards": 4
+}

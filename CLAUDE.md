@@ -65,15 +65,15 @@ Stage 4: 长视频 VoCo 压缩 + Segment Selector
   - 方法：latent tokens + bottleneck mask + VoCo 压缩 + Temporal Head
   - Claim：bottleneck 迫使 latent 承载视觉信息，单次前向做 grounding
 - **训练路线**：Stage 1 VoCo(可跳) → Stage 2 Bottleneck SFT(MCQ) → Stage 3 Temporal Head(temporal data)
-- **当前阶段**：006-012 多架构 ablation + 外部 benchmark 评测
+- **当前阶段**：006-013 多架构 ablation + temporal grounding + 外部 benchmark 评测
   - 006 cross-attention compressor（A40 完成，A100 复现确认）
   - 007 inter-segment attention（110K 训练中）
   - 008 K-sweep K=2/4/8/16/32（110K 训练中）
   - 009 pooling baseline（110K 训练中）
   - 010 gated compression（110K 训练中）
-  - 011 question-conditioned（待实现）
-  - 013 temporal grounding（待数据 + 代码适配）
-  - 014 external benchmarks（MVBench + Video-MME Short 已出结果）
+  - 011 temporal-segment 方案 B（Q-conditioned per-segment，待视频数据）
+  - 012 temporal-binquery 方案 C（cross-attention bin queries，待视频数据）
+  - 013 external benchmarks（MVBench + Video-MME Short 已出结果）
 - **启动任何实验前，先确认"当前在哪个 Stage，用什么数据，训什么参数"**
 
 ### 1. 训练前必检清单（每次启动训练前逐条确认）
@@ -161,10 +161,9 @@ video/
 │   ├── 008-k-sweep/             # K 值扫描
 │   ├── 009-pooling-baseline/    # Pooling 下界
 │   ├── 010-gated-compression/   # Gate 加权压缩
-│   ├── 011-question-conditioned/ # Q-conditioned 压缩
-│   ├── 012-adapter-compression/ # Adapter 式压缩
-│   ├── 013-temporal-grounding/  # Temporal Head 时间定位
-│   ├── 014-external-benchmarks/ # MVBench/Video-MME/NExT-QA
+│   ├── 011-temporal-segment/    # 方案 B: Q-conditioned per-segment temporal head
+│   ├── 012-temporal-binquery/   # 方案 C: Cross-attention bin queries temporal head
+│   ├── 013-external-benchmarks/ # MVBench/Video-MME/NExT-QA
 │   └── results_summary.md      # 实验结果汇总
 ├── scripts/                     # 可复用工具脚本
 │   ├── download_paper.sh

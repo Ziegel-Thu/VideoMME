@@ -1,0 +1,109 @@
+{
+  "total_acc": 58.71345029239766,
+  "total_correct": 502,
+  "total_count": 855,
+  "task_results": {
+    "action_antonym": {
+      "correct": 5,
+      "total": 5,
+      "acc": 100.0
+    },
+    "action_count": {
+      "correct": 18,
+      "total": 50,
+      "acc": 36.0
+    },
+    "action_localization": {
+      "correct": 21,
+      "total": 50,
+      "acc": 42.0
+    },
+    "action_prediction": {
+      "correct": 30,
+      "total": 50,
+      "acc": 60.0
+    },
+    "action_sequence": {
+      "correct": 33,
+      "total": 50,
+      "acc": 66.0
+    },
+    "character_order": {
+      "correct": 29,
+      "total": 50,
+      "acc": 57.99999999999999
+    },
+    "counterfactual_inference": {
+      "correct": 32,
+      "total": 50,
+      "acc": 64.0
+    },
+    "egocentric_navigation": {
+      "correct": 13,
+      "total": 50,
+      "acc": 26.0
+    },
+    "episodic_reasoning": {
+      "correct": 0,
+      "total": 0,
+      "acc": 0.0
+    },
+    "fine_grained_action": {
+      "correct": 21,
+      "total": 50,
+      "acc": 42.0
+    },
+    "fine_grained_pose": {
+      "correct": 0,
+      "total": 0,
+      "acc": 0.0
+    },
+    "moving_attribute": {
+      "correct": 45,
+      "total": 50,
+      "acc": 90.0
+    },
+    "moving_count": {
+      "correct": 34,
+      "total": 50,
+      "acc": 68.0
+    },
+    "moving_direction": {
+      "correct": 18,
+      "total": 50,
+      "acc": 36.0
+    },
+    "object_existence": {
+      "correct": 37,
+      "total": 50,
+      "acc": 74.0
+    },
+    "object_interaction": {
+      "correct": 30,
+      "total": 50,
+      "acc": 60.0
+    },
+    "object_shuffle": {
+      "correct": 25,
+      "total": 50,
+      "acc": 50.0
+    },
+    "scene_transition": {
+      "correct": 48,
+      "total": 50,
+      "acc": 96.0
+    },
+    "state_change": {
+      "correct": 25,
+      "total": 50,
+      "acc": 50.0
+    },
+    "unexpected_action": {
+      "correct": 38,
+      "total": 50,
+      "acc": 76.0
+    }
+  },
+  "shard_id": 1,
+  "num_shards": 4
+}
