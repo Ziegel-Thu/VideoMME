@@ -4,7 +4,7 @@
 
 本项目研究视频理解与多模态大模型评测，核心方向：在 VLM 中加 latent visual bottleneck 做 grounded video reasoning。
 
-硬件环境：A100 80GB，集群可用多卡（4×A100）。
+硬件环境：amlt A100 80GB 集群（4×A100 per node）+ A40 48GB 集群（jiagpu，8×A40 per node）。
 
 ---
 
@@ -65,7 +65,15 @@ Stage 4: 长视频 VoCo 压缩 + Segment Selector
   - 方法：latent tokens + bottleneck mask + VoCo 压缩 + Temporal Head
   - Claim：bottleneck 迫使 latent 承载视觉信息，单次前向做 grounding
 - **训练路线**：Stage 1 VoCo(可跳) → Stage 2 Bottleneck SFT(MCQ) → Stage 3 Temporal Head(temporal data)
-- **当前阶段**：Stage 2 多卡训练（003-bottleneck-multigpu，4×A100，N=8~16帧）
+- **当前阶段**：006-012 多架构 ablation + 外部 benchmark 评测
+  - 006 cross-attention compressor（A40 完成，A100 复现确认）
+  - 007 inter-segment attention（110K 训练中）
+  - 008 K-sweep K=2/4/8/16/32（110K 训练中）
+  - 009 pooling baseline（110K 训练中）
+  - 010 gated compression（110K 训练中）
+  - 011 question-conditioned（待实现）
+  - 013 temporal grounding（待数据 + 代码适配）
+  - 014 external benchmarks（MVBench + Video-MME Short 已出结果）
 - **启动任何实验前，先确认"当前在哪个 Stage，用什么数据，训什么参数"**
 
 ### 1. 训练前必检清单（每次启动训练前逐条确认）
@@ -142,17 +150,28 @@ Stage 4: 长视频 VoCo 压缩 + Segment Selector
 ```
 video/
 ├── CLAUDE.md                    # 本文件：行为约束与项目约定
-├── paper/                       # 论文 LaTeX 源码仓库（通过脚本下载）
-│   └── {名称}/                  # 每篇论文独立目录，含 .tex/.bib/figures
+├── plan.md                      # 项目总计划
+├── experiments/
+│   ├── 002-latent-bottleneck/   # 单卡 MVP（已完成）
+│   ├── 003-bottleneck-multigpu/ # 多卡 DDP Stage 2（已完成）
+│   ├── 004-voco-segment-compression/ # 静态 VoCo（已废弃）
+│   ├── 005-teacher-cache/       # Teacher 特征预提取
+│   ├── 006-cross-attention-compressor/ # Cross-attention 压缩蒸馏
+│   ├── 007-inter-segment-attention/    # 段间 attention
+│   ├── 008-k-sweep/             # K 值扫描
+│   ├── 009-pooling-baseline/    # Pooling 下界
+│   ├── 010-gated-compression/   # Gate 加权压缩
+│   ├── 011-question-conditioned/ # Q-conditioned 压缩
+│   ├── 012-adapter-compression/ # Adapter 式压缩
+│   ├── 013-temporal-grounding/  # Temporal Head 时间定位
+│   ├── 014-external-benchmarks/ # MVBench/Video-MME/NExT-QA
+│   └── results_summary.md      # 实验结果汇总
 ├── scripts/                     # 可复用工具脚本
-│   ├── download_paper.sh        # arXiv 论文 LaTeX 下载工具
-│   └── parse_mcq_data.py        # MCQ 数据解析脚本（LLaVA-Video-178K + STGR）
-├── experiments/                 # 实验代码（按编号组织）
-│   ├── 002-latent-bottleneck/   # 单卡 Stage 2 实验（已完成）
-│   ├── 003-bottleneck-multigpu/ # 多卡 DDP Stage 2（当前）
-│   └── 004-voco-segment-compression/ # VoCo 分段压缩（训练中）
-├── data/                        # 训练数据和视频（gitignore）
-└── plan.md                      # 研究计划（session state 里）
+│   ├── download_paper.sh
+│   ├── parse_mcq_data.py
+│   ├── eval_mcq.py              # 通用 MCQ 评测
+│   └── ensure_data.sh
+└── data/                        # 训练数据和视频（gitignore）
 ```
 
 ### 命名规范

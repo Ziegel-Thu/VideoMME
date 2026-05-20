@@ -86,9 +86,9 @@ class TeacherCacheDataset(Dataset):
         shard_groups = {}
         for shard_path in shard_files:
             name = os.path.basename(shard_path)
-            # 支持 teacher_shard_rank0_000.pt 和 teacher_shard_p0_rank0_000.pt
+            # 按 prefix + rank 分组，避免不同 prefix 的 shard 混在同一 group
             import re
-            m = re.search(r'(rank\d+)', name)
+            m = re.match(r'teacher_shard_(.+_rank\d+)_\d+\.pt', name)
             group_key = m.group(1) if m else "single"
             shard_groups.setdefault(group_key, []).append(shard_path)
 
@@ -224,7 +224,7 @@ def student_forward_segment(inner, compressed, q_embeds, device):
 
 def compress_segments(compressor, inter_segment, segments):
     """逐段压缩后，可选地让所有段 compressed tokens 做一次全局交互。"""
-    compressed_segments = [compressor(seg) for seg in segments]
+    compressed_segments = [compressor(seg, q_embeds=q_emb) for seg in segments]
     if inter_segment is None:
         return compressed_segments
 
