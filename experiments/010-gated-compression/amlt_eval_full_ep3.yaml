@@ -1,4 +1,4 @@
-description: "010 gated full MCQ eval (ep3+ep3)"
+description: "010 gated full MCQ eval (ep3)"
 target:
   service: sing
   name: msrresrchbasicvc

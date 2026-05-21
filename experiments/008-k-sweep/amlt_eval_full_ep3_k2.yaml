@@ -1,4 +1,4 @@
-description: "008 K=2 full MCQ eval (ep3+ep3)"
+description: "008 K=2 full MCQ eval (ep3)"
 target:
   service: sing
   name: msrresrchbasicvc
