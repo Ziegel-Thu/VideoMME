@@ -1,6 +1,6 @@
 # VoCo Cross-Attention Compressor 实验汇总
 
-> 最后更新：2026-05-21 05:00
+> 最后更新：2026-05-21 08:00
 
 ## Setting
 
@@ -80,8 +80,18 @@
 | 模型 | Acc |
 |------|-----|
 | **Zeroshot** | **63.33%** (570/900) |
-| B-1L ep1 | 待跑 |
-| B-2L ep2 | 待跑 |
+| 006 B-1L ep1 | 待出 |
+| 006 B-2L ep2 | 待出 |
+| 007 inter-seg B1L ep1 | 40.33% (363/900) |
+| 008 K=2 B2L ep1 | 40.78% (367/900) |
+| 008 K=4 B2L ep1 | 42.22% (380/900) |
+| 008 K=8 B2L ep1 | 41.78% (376/900) |
+| 008 K=16 B2L ep1 | 42.22% (380/900) |
+
+**观察**：
+- 所有 compressor 变体在 VME Short 上表现相近（40-42%），远低于 zeroshot（63%）
+- K-sweep 中 K=4 和 K=16 并列最高（42.22%），K=2 最低（40.78%）
+- 007 inter-seg（40.33%）略低于 baseline 006 K=8（41.78%），段间 attention 无收益
 
 ### NExT-QA（8564 条 test）
 
@@ -94,8 +104,10 @@
 1. **B loss 最优**: B > BD > D（10K: 71% vs 69.5% vs 65%）
 2. **2L > 1L**: full eval 上 B-2L 全面优于 B-1L（+0.3~0.5%）
 3. **Full eval 各 epoch 差距很小**: B-2L 0-60 全量 68.83%→68.86%→68.98%
-4. **外部 benchmark gap 更大**: MVBench 压缩后 59%→42%（-17%），比内部 MCQ 80%→69%（-11%）更大
-5. **Inter-seg 10K 无收益**: 66.5% vs 71.0%，110K 训练中
+4. **外部 benchmark gap 更大**: MVBench 压缩后 59%→42%（-17%），VME Short 63%→42%（-21%），比内部 MCQ 80%→69%（-11%）更大
+5. **Inter-seg 10K 无收益**: 66.5% vs 71.0%；VME Short 也低于 baseline（40.33% vs 41.78%）
+6. **K-sweep VME Short**: K=4/16 并列最高（42.22%），K 增大收益不明显
+7. **K-sweep train loss**: K 越大 loss 越低（K2=1.39→K16=1.22），但 eval 上差距很小
 
 ## 进行中
 
@@ -103,14 +115,14 @@
 
 | 实验 | amlt | Epoch 进度 | Train Loss (ep1) |
 |------|------|-----------|-----------------|
-| 007 inter-seg B1L inter1 | liberal-seasnail | 3/3 ~55% | 1.929 |
-| 008 K=2 B2L | trusting-cheetah | 3/3 ~20% | 1.391 |
-| 008 K=4 B2L | thorough-grouse | 3/3 ~35% | 1.302 |
-| 008 K=8 B2L | equal-mongoose | 3/3 ~24% | 1.242 |
-| 008 K=16 B2L | safe-gopher | 2/3 ~66% | 1.216 |
+| 007 inter-seg B1L inter1 | liberal-seasnail | 3/3 ~90% | 1.929 |
+| 008 K=2 B2L | trusting-cheetah | 3/3 ~50% | 1.391 |
+| 008 K=4 B2L | thorough-grouse | 3/3 ~65% | 1.302 |
+| 008 K=8 B2L | equal-mongoose | 3/3 ~55% | 1.242 |
+| 008 K=16 B2L | safe-gopher | 2/3→3/3 | 1.216 |
 | 008 K=32 B2L | happy-malamute | queued | - |
-| 009 pooling B1L | better-lemming | 3/3 ~62% | 6.481 |
-| 010 gated B2L | ultimate-monkfish | 3/3 ~30% | 1.272 |
+| 009 pooling B1L | better-lemming | 3/3 ~97% | 6.481 |
+| 010 gated B2L | ultimate-monkfish | 3/3 ~60% | 1.272 |
 
 ### K-sweep Train Loss 趋势（epoch1）
 
@@ -124,18 +136,29 @@
 
 Loss 随 K 增大单调下降，符合预期（更多 tokens 更容易压缩）。
 
-### Epoch1 MCQ Eval（已提交，queued）
+### Epoch1 MCQ Eval（已提交 BSC，等结果）
 
-| 实验 | amlt eval | 状态 |
-|------|-----------|------|
-| 007 inter-seg | charmed-goshawk | queued |
-| 008 K=2 | saved-monitor | queued |
-| 008 K=4 | eager-sculpin | queued |
-| 008 K=8 | moved-foal | queued |
-| 008 K=16 | splendid-dogfish | queued |
-| 010 gated | ethical-hamster | queued |
+| 实验 | 状态 |
+|------|------|
+| 007 inter-seg ep1/ep2 | BSC preparing |
+| 008 K=2 ep1/ep2 | BSC preparing |
+| 008 K=4 ep1/ep2 | BSC preparing |
+| 008 K=8 ep1/ep2 | BSC preparing |
+| 008 K=16 ep1/ep2 | BSC preparing |
+| 010 gated ep1/ep2 | BSC preparing |
 
-### 011/012 Temporal Grounding 小规模测试
+### VME Short Epoch1 Eval（已完成 ✅）
+
+见外部 Benchmark 章节。
+
+### 011/012 Temporal Grounding
+
+| 方案 | amlt | lr | 状态 |
+|------|------|----|------|
+| B segment | teaching-anteater | 1e-5 | queued (STD) |
+| C binquery | relevant-calf | 1e-4 | queued (STD) |
+
+小规模测试（100 样本）：
 
 | 方案 | lr | 100 样本 Epoch 1→3(→5) | 趋势 |
 |------|-----|----------------------|------|
