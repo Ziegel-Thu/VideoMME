@@ -247,7 +247,7 @@ def main(args):
     from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
     model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
         args.model_path, torch_dtype=torch.bfloat16,
-        attn_implementation="sdpa" if args.checkpoint else "eager",
+        attn_implementation="eager",
     ).to(device)
     model.eval()
     processor = AutoProcessor.from_pretrained(args.model_path)
@@ -343,6 +343,8 @@ def main(args):
                 count += 1
                 
             except Exception as e:
+                import traceback
+                traceback.print_exc()
                 continue
         
         acc = correct / max(count, 1) * 100

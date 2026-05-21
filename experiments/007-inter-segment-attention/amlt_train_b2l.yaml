@@ -1,0 +1,29 @@
+description: "007 Inter-Segment Attention 110K (B-2L + inter_layers=1, 4×A100)"
+
+target:
+  service: sing
+  name: msrresrchbasicvc
+  workspace_name: msraairwsws
+
+environment:
+  image: amlt-sing/2.5.0-cuda12.4-cudnn9-devel
+  setup:
+    - pip install transformers==4.57.6 peft accelerate qwen-vl-utils decord pillow
+
+code:
+  local_dir: $CONFIG_DIR
+
+jobs:
+  - name: interseg-b2l-inter1-110k
+    sku: 80G4-A100-NvLink
+    sla_tier: standard
+    command:
+      - >-
+        torchrun --nproc_per_node=4 train_compressor.py
+        --cache_dir /mnt/default/bottleneck/teacher_cache_110k_v2
+        --output_dir $$AMLT_OUTPUT_DIR
+        --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct
+        --cache_shard_size 512
+        --K_seg 8 --n_layers 2 --inter_layers 1 --loss_type B
+        --lr 1e-4 --epochs 3 --save_steps 1000
+        2>&1 | tee $$AMLT_OUTPUT_DIR/train_log.txt

@@ -1,0 +1,22 @@
+description: "VME Short 010 gated ep1"
+target:
+  service: sing
+  name: msrresrchbasicvc
+  workspace_name: msraairwsws
+environment:
+  image: amlt-sing/2.5.0-cuda12.4-cudnn9-devel
+  setup:
+    - pip install transformers==4.57.6 peft accelerate qwen-vl-utils decord pillow pandas pyarrow
+code:
+  local_dir: $CONFIG_DIR
+jobs:
+  - name: vme-010-ep1
+    sku: 80G4-A100
+    sla_tier: basic
+    command:
+      - >-
+        CUDA_VISIBLE_DEVICES=0 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/010_gated/110k_gated_B2L_ep1.pt --shard_id 0 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard0.json > $$AMLT_OUTPUT_DIR/shard0.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=1 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/010_gated/110k_gated_B2L_ep1.pt --shard_id 1 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard1.json > $$AMLT_OUTPUT_DIR/shard1.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=2 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/010_gated/110k_gated_B2L_ep1.pt --shard_id 2 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard2.json > $$AMLT_OUTPUT_DIR/shard2.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=3 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/010_gated/110k_gated_B2L_ep1.pt --shard_id 3 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard3.json > $$AMLT_OUTPUT_DIR/shard3.txt 2>&1 &
+        wait
