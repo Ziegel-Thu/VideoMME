@@ -1,6 +1,6 @@
 # VoCo Cross-Attention Compressor 实验汇总
 
-> 最后更新：2026-05-19 16:40
+> 最后更新：2026-05-21 05:00
 
 ## Setting
 
@@ -99,16 +99,56 @@
 
 ## 进行中
 
-- [ ] 007 inter-seg 110K 训练（ready-hedgehog）
-- [ ] 008 K-sweep 110K 5 个 K 值（5 个独立 experiment）
-- [ ] 009 pooling 110K（intense-goshawk）
-- [ ] 010 gated 110K（loved-ghoul）
-- [ ] 110K ckpt 出来后跑 MVBench + Video-MME + 内部 MCQ eval
+### 110K 训练（3 epochs, 4×A100 DDP）
+
+| 实验 | amlt | Epoch 进度 | Train Loss (ep1) |
+|------|------|-----------|-----------------|
+| 007 inter-seg B1L inter1 | liberal-seasnail | 3/3 ~55% | 1.929 |
+| 008 K=2 B2L | trusting-cheetah | 3/3 ~20% | 1.391 |
+| 008 K=4 B2L | thorough-grouse | 3/3 ~35% | 1.302 |
+| 008 K=8 B2L | equal-mongoose | 3/3 ~24% | 1.242 |
+| 008 K=16 B2L | safe-gopher | 2/3 ~66% | 1.216 |
+| 008 K=32 B2L | happy-malamute | queued | - |
+| 009 pooling B1L | better-lemming | 3/3 ~62% | 6.481 |
+| 010 gated B2L | ultimate-monkfish | 3/3 ~30% | 1.272 |
+
+### K-sweep Train Loss 趋势（epoch1）
+
+| K | Loss | 说明 |
+|---|------|------|
+| 2 | 1.391 | 压缩最激进 |
+| 4 | 1.302 | |
+| 8 | 1.242 | 基准 |
+| 16 | 1.216 | |
+| 32 | - | 排队中 |
+
+Loss 随 K 增大单调下降，符合预期（更多 tokens 更容易压缩）。
+
+### Epoch1 MCQ Eval（已提交，queued）
+
+| 实验 | amlt eval | 状态 |
+|------|-----------|------|
+| 007 inter-seg | charmed-goshawk | queued |
+| 008 K=2 | saved-monitor | queued |
+| 008 K=4 | eager-sculpin | queued |
+| 008 K=8 | moved-foal | queued |
+| 008 K=16 | splendid-dogfish | queued |
+| 010 gated | ethical-hamster | queued |
+
+### 011/012 Temporal Grounding 小规模测试
+
+| 方案 | lr | 100 样本 Epoch 1→3(→5) | 趋势 |
+|------|-----|----------------------|------|
+| B segment | 1e-4 | 0.939→0.944 | ❌ 震荡 |
+| B segment | 1e-5 | 0.884→0.873→0.864 | ✅ 稳降 |
+| C binquery | 1e-4 | 1.084→0.928 | ✅ 下降 |
 
 ## 下一步
 
-- [ ] 分析 K-sweep 结果，确定最优 K
-- [ ] 009/010 vs 006 架构对比
-- [ ] Video-MME Short B1L/B2L eval
-- [ ] NExT-QA 视频下载 + eval
-- [ ] 011 question-conditioned 实现
+- [ ] 110K 3 epochs 完成后下载 epoch2/3 checkpoints
+- [ ] 007-010 epoch1 MCQ eval 结果收集
+- [ ] VME Short eval 提交（007 + 008 K-sweep）
+- [ ] 011/012 temporal 正式训练（先 smoketest → 小规模验证 → 全量）
+- [ ] 009 pooling eval 需适配 PoolingCompressor
+- [ ] K-sweep 结果分析：K vs Accuracy 曲线
+- [ ] NExT-QA 视频待传输
