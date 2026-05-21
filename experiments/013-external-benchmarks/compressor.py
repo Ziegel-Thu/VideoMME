@@ -161,3 +161,50 @@ class VoCoCompressorLayer(nn.Module):
         # FFN (pre-norm)
         queries = queries + self.ffn(self.norm_ffn(queries))
         return queries
+
+
+class GatedVoCoCompressor(nn.Module):
+    """Cross-Attention 压缩 + Gate 加权（010 gated 用）。"""
+
+    def __init__(self, K=8, dim=3584, n_heads=8, n_layers=1, ffn_mult=4):
+        super().__init__()
+        self.K = K
+        self.dim = dim
+        self.n_layers = n_layers
+        self.queries = nn.Parameter(torch.randn(K, dim) * 0.02)
+        self.layers = nn.ModuleList()
+        for _ in range(n_layers):
+            self.layers.append(VoCoCompressorLayer(dim, n_heads, ffn_mult))
+        self.out_norm = nn.LayerNorm(dim)
+        self.gate = nn.Sequential(nn.Linear(dim, 1), nn.Sigmoid())
+
+    def forward(self, dense_vision):
+        x = self.queries
+        for layer in self.layers:
+            x = layer(x, dense_vision)
+        x = self.out_norm(x)
+        g = self.gate(x)
+        return x * g
+
+    def num_params(self):
+        return sum(p.numel() for p in self.parameters())
+
+
+class PoolingCompressor(nn.Module):
+    """Attention Pooling 压缩模块（009 pooling baseline 用）。"""
+
+    def __init__(self, K=8, dim=3584, n_heads=8, n_layers=1, ffn_mult=4):
+        super().__init__()
+        self.K = K
+        self.dim = dim
+        self.score_proj = nn.Linear(dim, K)
+        self.out_norm = nn.LayerNorm(dim)
+
+    def forward(self, dense_vision):
+        scores = self.score_proj(dense_vision)
+        weights = torch.softmax(scores, dim=0)
+        compressed = weights.T @ dense_vision
+        return self.out_norm(compressed)
+
+    def num_params(self):
+        return sum(p.numel() for p in self.parameters())

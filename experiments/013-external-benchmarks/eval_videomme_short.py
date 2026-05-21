@@ -107,7 +107,16 @@ def main(args):
         inter_layers = ckpt.get("inter_layers", 0) or 0
         print(f"Compressor: K={K_seg}, n_layers={n_layers}, inter_layers={inter_layers}")
 
-        compressor = VoCoCompressor(K=K_seg, dim=3584, n_layers=n_layers)
+        # 自动检测 compressor 类型
+        ckpt_keys = set(ckpt['compressor'].keys())
+        if any('gate' in k for k in ckpt_keys):
+            from compressor import GatedVoCoCompressor
+            compressor = GatedVoCoCompressor(K=K_seg, dim=3584, n_layers=n_layers)
+        elif 'score_proj.weight' in ckpt_keys:
+            from compressor import PoolingCompressor
+            compressor = PoolingCompressor(K=K_seg, dim=3584, n_layers=n_layers)
+        else:
+            compressor = VoCoCompressor(K=K_seg, dim=3584, n_layers=n_layers)
         compressor.load_state_dict(ckpt["compressor"])
         compressor = compressor.to(device, dtype=torch.bfloat16)
         compressor.eval()
