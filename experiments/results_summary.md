@@ -137,64 +137,60 @@
 
 ## 进行中
 
-### 110K 训练（3 epochs, 4×A100 DDP）
+### Eval 全景矩阵
 
-| 实验 | amlt | 状态 | Train Loss (ep1→ep3) |
-|------|------|------|---------------------|
-| 007 inter-seg B1L inter1 | liberal-seasnail | ✅ PASS | 1.929→1.677 |
-| 008 K=2 B2L | trusting-cheetah | ✅ PASS | 1.391→? |
-| 008 K=4 B2L | thorough-grouse | ✅ PASS | 1.302→? |
-| 008 K=8 B2L | equal-mongoose | ✅ PASS | 1.242→? |
-| 008 K=16 B2L | safe-gopher | running (~22h) | 1.216 |
-| 008 K=32 B2L | happy-malamute | running (~1h) | - |
-| 009 pooling B1L | better-lemming | ✅ PASS | 6.481→? |
-| 010 gated B2L | ultimate-monkfish | ✅ PASS | 1.272→? |
+> ✅ = 已出结果 | 🔄 = running | 🕐 = submitted/queued | - = 未提交
 
-Epoch1/2/3 checkpoints 全部已下载并上传 blob（K16/K32 除外）。
+| Checkpoint | MCQ ep1 | MCQ ep2 | MCQ ep3 | MVBench | VME Short | NExT-QA |
+|------------|---------|---------|---------|---------|-----------|---------|
+| **Zeroshot** | **80.65%** ✅ | - | - | **59.01%** ✅ | **63.33%** ✅ | 🕐 |
+| 006 B-1L ep1 | 70.08% ✅ | - | 69.86% ✅ | 42.22% ✅ | 42.89% ✅ | - |
+| 006 B-2L ep2 | - | 69.59% ✅ | 69.21% ✅ | 42.58% ✅ | 43.00% ✅ | 🕐 |
+| 007 inter-seg B1L ep1 | 65.5% ✅ | 66.0% ✅ | 🕐 | 🕐 | 40.33% ✅ | 🕐 |
+| 008 K=2 B2L | 🕐 | 70.5% ✅ | 🕐 | 🕐 | 40.78% ✅ | 🕐 |
+| 008 K=4 B2L | 🕐 | 69.0% ✅ | 🕐 | 🕐 | 42.22% ✅ | 🕐 |
+| 008 K=8 B2L | 70.5% ✅ | 69.5% ✅ | 🕐 | 🕐 | 41.78% ✅ | 🕐 |
+| 008 K=16 B2L | 69.0% ✅ | - | - | 🕐 | 42.22% ✅ | 🕐 |
+| 010 gated B2L | 70.0% ✅ | 70.5% ✅ | 🕐 | 🕐 | 🕐 | 🕐 |
 
-### K-sweep Train Loss 趋势（epoch1）
+**注意**：MCQ 007-010 为 200 条 quick eval（非全量）。MVBench 已修复 attn bug 重提。
 
-| K | Loss | 说明 |
-|---|------|------|
-| 2 | 1.391 | 压缩最激进 |
-| 4 | 1.302 | |
-| 8 | 1.242 | 基准 |
-| 16 | 1.216 | |
-| 32 | - | 排队中 |
+### amlt Eval Experiment 追踪
 
-Loss 随 K 增大单调下降，符合预期（更多 tokens 更容易压缩）。
+| Experiment | 内容 | Jobs | 状态 |
+|------------|------|------|------|
+| sharing-tahr | VME 006 B1L/B2L | 2 | ✅ pass |
+| inspired-bluejay | VME 007+K-sweep ep1 | 5 | ✅ pass |
+| neat-gull | VME 010 ep1 | 1 | ✅ pass |
+| happy-badger | VME 007/K-sweep/010 ep2 | 7 | 部分 pass |
+| winning-bug | VME K2/K4/K8 ep3 | 3 | 🕐 queued |
+| massive-alpaca | MVBench 007+K-sweep+010 ep1 (fix) | 6 | 🕐 submitted |
+| discrete-deer | MVBench ep2/ep3 (fix) | 7 | 🕐 submitted |
+| major-owl | MVBench K2/K4/K8 ep3 (fix) | 3 | 🕐 submitted |
+| main-cow | NExT-QA zeroshot + B2L | 2 | 🔄 running |
+| advanced-bluejay | NExT-QA 007+K-sweep+010 ep1 | 6 | 🔄 running |
+| quick-lizard ~ master-labrador | MCQ ep1/ep2/ep3 (fixed) | 17 | 大部分 pass |
 
-### MCQ Eval（BSC basic 队列）
+### 110K 训练
 
-**已出结果（200 条 quick eval）：**
-
-| 实验 | ep1 | ep2 | ep3 |
-|------|-----|-----|-----|
-| 007 inter-seg B1L | 65.5% | 66.0% | 提交中 |
-| 008 K=2 B2L | - | 70.5% | 提交中 |
-| 008 K=4 B2L | - | 69.0% | 提交中 |
-| 008 K=8 B2L | 70.5% | 69.5% | 提交中 |
-| 008 K=16 B2L | 69.0% | (ckpt 未就绪) | - |
-| 010 gated B2L | 70.0% | 70.5% | 提交中 |
-
-**注意**：这些是 eval_compressor.py 默认 200 条 quick eval，不是全量。
-
-### VME Short Epoch1 Eval（已完成 ✅）
-
-见外部 Benchmark 章节。VME ep2/ep3 eval 待提交。
-
-### NExT-QA Eval
-
-- 视频已解压（5440 个，24.6GB），上传 blob 中
-- eval_nextqa.py 本地验证通过（zeroshot + compressor 模式）
-- 全量 eval 待 blob 上传完成后提交
+| 实验 | amlt | 状态 | Train Loss (ep1) |
+|------|------|------|-----------------|
+| 007 inter-seg B1L | liberal-seasnail | ✅ PASS | 1.929 |
+| 007 inter-seg **B2L** | peaceful-sturgeon | 🔄 running | - |
+| 008 K=2 B2L | trusting-cheetah | ✅ PASS | 1.391 |
+| 008 K=4 B2L | thorough-grouse | ✅ PASS | 1.302 |
+| 008 K=8 B2L | equal-mongoose | ✅ PASS | 1.242 |
+| 008 K=16 B2L | safe-gopher | 🔄 running (~1d) | 1.216 |
+| 008 K=32 B2L | happy-malamute | 🔄 running (~2h) | - |
+| 009 pooling B1L | better-lemming | ✅ PASS | 6.481 |
+| 010 gated B2L | ultimate-monkfish | ✅ PASS | 1.272 |
 
 ### 011/012 Temporal Grounding
 
 | 方案 | amlt | lr | 状态 |
 |------|------|----|------|
-| B segment | teaching-anteater | 1e-5 | queued (STD) |
-| C binquery | relevant-calf | 1e-4 | queued (STD) |
+| B segment | teaching-anteater | 1e-5 | 🔄 running 5h |
+| C binquery | relevant-calf | 1e-4 | 🔄 running 2h |
 
 小规模测试（100 样本）：
 
