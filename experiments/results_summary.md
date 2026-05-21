@@ -43,6 +43,8 @@
 
 ## 110K Quick Eval（前 200 条）
 
+### 006 Baseline
+
 | 配置 | epoch | 0-30 (200) | 0-60 (200) |
 |------|-------|-----------|-----------|
 | B-1L | 1 | 71.50% | 66.00% |
@@ -50,6 +52,23 @@
 | B-2L | 1 | 72.00% | 67.50% |
 | **B-2L** | **2** | **75.00%** | **68.00%** |
 | B-2L | 3 | 73.00% | 67.50% |
+
+### 007-010 新架构（200 条 quick eval）
+
+| 实验 | epoch 1 | epoch 2 |
+|------|---------|---------|
+| 007 inter-seg B1L | 65.5% | 66.0% |
+| 008 K=2 B2L | - | 70.5% |
+| 008 K=4 B2L | - | 69.0% |
+| 008 K=8 B2L | 70.5% | 69.5% |
+| 008 K=16 B2L | 69.0% | (K16 ep2 ckpt 未就绪) |
+| 010 gated B2L | **70.0%** | **70.5%** |
+
+**观察**:
+- 010 gated 与 008 K=8 几乎持平（70-70.5%），gate 没有显著收益
+- 007 inter-seg（65.5-66%）明显低于 006 baseline（~72%），段间 attention 有害
+- K-sweep: K=2/8 都在 ~70%，K 值对 200 条 quick eval 影响不大
+- 这些是 200 条快速评测，全量 eval 待做
 
 ---
 
@@ -105,24 +124,26 @@
 2. **2L > 1L**: full eval 上 B-2L 全面优于 B-1L（+0.3~0.5%）
 3. **Full eval 各 epoch 差距很小**: B-2L 0-60 全量 68.83%→68.86%→68.98%
 4. **外部 benchmark gap 更大**: MVBench 压缩后 59%→42%（-17%），VME Short 63%→42%（-21%），比内部 MCQ 80%→69%（-11%）更大
-5. **Inter-seg 10K 无收益**: 66.5% vs 71.0%；VME Short 也低于 baseline（40.33% vs 41.78%）
-6. **K-sweep VME Short**: K=4/16 并列最高（42.22%），K 增大收益不明显
-7. **K-sweep train loss**: K 越大 loss 越低（K2=1.39→K16=1.22），但 eval 上差距很小
+5. **Inter-seg 有害**: 007 quick eval 65.5% vs 006 B-2L 75%（-10%），VME 40.3% vs 42.2%
+6. **Gated 无显著收益**: 010 gated 70-70.5% ≈ 008 K=8 70.5%，gate 机制没帮助
+7. **K-sweep VME Short**: K=4/16 并列最高（42.22%），K 增大收益不明显
+8. **K-sweep train loss**: K 越大 loss 越低（K2=1.39→K16=1.22），但 eval 差距很小
+9. **所有压缩方法在外部 benchmark 上 gap 一致**: ~40-42% VME，~42% MVBench
 
 ## 进行中
 
 ### 110K 训练（3 epochs, 4×A100 DDP）
 
-| 实验 | amlt | Epoch 进度 | Train Loss (ep1) |
-|------|------|-----------|-----------------|
-| 007 inter-seg B1L inter1 | liberal-seasnail | 3/3 ~90% | 1.929 |
-| 008 K=2 B2L | trusting-cheetah | 3/3 ~50% | 1.391 |
-| 008 K=4 B2L | thorough-grouse | 3/3 ~65% | 1.302 |
-| 008 K=8 B2L | equal-mongoose | 3/3 ~55% | 1.242 |
+| 实验 | amlt | 状态 | Train Loss (ep1) |
+|------|------|------|-----------------|
+| 007 inter-seg B1L inter1 | liberal-seasnail | ✅ PASS | 1.929 |
+| 008 K=2 B2L | trusting-cheetah | 3/3 ~70% | 1.391 |
+| 008 K=4 B2L | thorough-grouse | 3/3 ~82% | 1.302 |
+| 008 K=8 B2L | equal-mongoose | 3/3 ~75% | 1.242 |
 | 008 K=16 B2L | safe-gopher | 2/3→3/3 | 1.216 |
 | 008 K=32 B2L | happy-malamute | queued | - |
-| 009 pooling B1L | better-lemming | 3/3 ~97% | 6.481 |
-| 010 gated B2L | ultimate-monkfish | 3/3 ~60% | 1.272 |
+| 009 pooling B1L | better-lemming | ✅ PASS | 6.481 |
+| 010 gated B2L | ultimate-monkfish | 3/3 ~80% | 1.272 |
 
 ### K-sweep Train Loss 趋势（epoch1）
 
