@@ -1,6 +1,6 @@
 # VoCo Cross-Attention Compressor 实验汇总
 
-> 最后更新：2026-05-21 08:00
+> 最后更新：2026-05-21 13:25
 
 ## Setting
 
@@ -112,9 +112,14 @@
 - K-sweep 中 K=4 和 K=16 并列最高（42.22%），K=2 最低（40.78%）
 - 007 inter-seg（40.33%）略低于 baseline 006 K=8（41.78%），段间 attention 无收益
 
-### NExT-QA（8564 条 test）
+### NExT-QA（8564 条 test, 5440 视频, 5 选 1 MCQ）
 
-视频待下载（Google Drive 需认证）
+| 模型 | Acc | C | T | D |
+|------|-----|---|---|---|
+| Zeroshot (5 条 sanity) | 83.3% | 75% | 100% | - |
+| B-2L ep2 (5 条 sanity) | 83.3% | 100% | 50% | - |
+
+视频已上传 blob（5440 个，24.6GB）。全量评测已提交 (main-cow, BSC)。
 
 ---
 
@@ -134,16 +139,18 @@
 
 ### 110K 训练（3 epochs, 4×A100 DDP）
 
-| 实验 | amlt | 状态 | Train Loss (ep1) |
-|------|------|------|-----------------|
-| 007 inter-seg B1L inter1 | liberal-seasnail | ✅ PASS | 1.929 |
-| 008 K=2 B2L | trusting-cheetah | 3/3 ~70% | 1.391 |
-| 008 K=4 B2L | thorough-grouse | 3/3 ~82% | 1.302 |
-| 008 K=8 B2L | equal-mongoose | 3/3 ~75% | 1.242 |
-| 008 K=16 B2L | safe-gopher | 2/3→3/3 | 1.216 |
-| 008 K=32 B2L | happy-malamute | queued | - |
-| 009 pooling B1L | better-lemming | ✅ PASS | 6.481 |
-| 010 gated B2L | ultimate-monkfish | 3/3 ~80% | 1.272 |
+| 实验 | amlt | 状态 | Train Loss (ep1→ep3) |
+|------|------|------|---------------------|
+| 007 inter-seg B1L inter1 | liberal-seasnail | ✅ PASS | 1.929→1.677 |
+| 008 K=2 B2L | trusting-cheetah | ✅ PASS | 1.391→? |
+| 008 K=4 B2L | thorough-grouse | ✅ PASS | 1.302→? |
+| 008 K=8 B2L | equal-mongoose | ✅ PASS | 1.242→? |
+| 008 K=16 B2L | safe-gopher | running (~22h) | 1.216 |
+| 008 K=32 B2L | happy-malamute | running (~1h) | - |
+| 009 pooling B1L | better-lemming | ✅ PASS | 6.481→? |
+| 010 gated B2L | ultimate-monkfish | ✅ PASS | 1.272→? |
+
+Epoch1/2/3 checkpoints 全部已下载并上传 blob（K16/K32 除外）。
 
 ### K-sweep Train Loss 趋势（epoch1）
 
@@ -157,20 +164,30 @@
 
 Loss 随 K 增大单调下降，符合预期（更多 tokens 更容易压缩）。
 
-### Epoch1 MCQ Eval（已提交 BSC，等结果）
+### MCQ Eval（BSC basic 队列）
 
-| 实验 | 状态 |
-|------|------|
-| 007 inter-seg ep1/ep2 | BSC preparing |
-| 008 K=2 ep1/ep2 | BSC preparing |
-| 008 K=4 ep1/ep2 | BSC preparing |
-| 008 K=8 ep1/ep2 | BSC preparing |
-| 008 K=16 ep1/ep2 | BSC preparing |
-| 010 gated ep1/ep2 | BSC preparing |
+**已出结果（200 条 quick eval）：**
+
+| 实验 | ep1 | ep2 | ep3 |
+|------|-----|-----|-----|
+| 007 inter-seg B1L | 65.5% | 66.0% | 提交中 |
+| 008 K=2 B2L | - | 70.5% | 提交中 |
+| 008 K=4 B2L | - | 69.0% | 提交中 |
+| 008 K=8 B2L | 70.5% | 69.5% | 提交中 |
+| 008 K=16 B2L | 69.0% | (ckpt 未就绪) | - |
+| 010 gated B2L | 70.0% | 70.5% | 提交中 |
+
+**注意**：这些是 eval_compressor.py 默认 200 条 quick eval，不是全量。
 
 ### VME Short Epoch1 Eval（已完成 ✅）
 
-见外部 Benchmark 章节。
+见外部 Benchmark 章节。VME ep2/ep3 eval 待提交。
+
+### NExT-QA Eval
+
+- 视频已解压（5440 个，24.6GB），上传 blob 中
+- eval_nextqa.py 本地验证通过（zeroshot + compressor 模式）
+- 全量 eval 待 blob 上传完成后提交
 
 ### 011/012 Temporal Grounding
 
@@ -189,10 +206,11 @@ Loss 随 K 增大单调下降，符合预期（更多 tokens 更容易压缩）�
 
 ## 下一步
 
-- [ ] 110K 3 epochs 完成后下载 epoch2/3 checkpoints
-- [ ] 007-010 epoch1 MCQ eval 结果收集
-- [ ] VME Short eval 提交（007 + 008 K-sweep）
-- [ ] 011/012 temporal 正式训练（先 smoketest → 小规模验证 → 全量）
+- [ ] K16/K32 训练完成后下载 checkpoint + 提交 eval
+- [ ] NExT-QA 全量 eval（zeroshot + B2L ep2）
+- [ ] VME Short ep2/ep3 eval 提交
+- [ ] 007-010 全量 MCQ eval（目前只有 200 条 quick eval）
 - [ ] 009 pooling eval 需适配 PoolingCompressor
-- [ ] K-sweep 结果分析：K vs Accuracy 曲线
-- [ ] NExT-QA 视频待传输
+- [ ] 011/012 temporal 正式训练
+- [ ] K-sweep 结果分析：K vs Accuracy 曲线图
+- [ ] results_summary 更新 MCQ 全量 eval 结果
