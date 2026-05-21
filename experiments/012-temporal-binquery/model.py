@@ -193,7 +193,10 @@ def get_video_embeds(base_model, pixel_values_videos, video_grid_thw, device):
 
     with torch.no_grad():  # vision encoder 冻结
         out = inner.model.get_video_features(pv, vg)
-        embeds = torch.cat(out.pooler_output, dim=0)  # (total, D)
+        if isinstance(out, tuple):
+            embeds = torch.cat(out[0] if isinstance(out[0], (list, tuple)) else [out[0]], dim=0)
+        else:
+            embeds = torch.cat(out.pooler_output, dim=0)  # (total, D)
 
     t, h, w = vg[0].tolist()
     tokens_per_frame = embeds.shape[0] // t
