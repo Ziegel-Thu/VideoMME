@@ -13,13 +13,6 @@ environment:
 code:
   local_dir: $CONFIG_DIR
 
-storage:
-  bottleneck:
-    storage_account_name: shuwangmain
-    container_name: amulet
-    mount_dir: /mnt/default
-    is_output: true
-
 jobs:
   - name: temporal-c-full
     sku: 80G4-A100-NvLink

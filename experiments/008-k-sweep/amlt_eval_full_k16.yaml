@@ -1,0 +1,32 @@
+description: "008 K=16 full MCQ eval (ep1+ep2)"
+target:
+  service: sing
+  name: msrresrchbasicvc
+  workspace_name: msraairwsws
+environment:
+  image: amlt-sing/2.5.0-cuda12.4-cudnn9-devel
+  setup:
+    - pip install transformers==4.57.6 peft accelerate qwen-vl-utils decord pillow
+code:
+  local_dir: $CONFIG_DIR
+jobs:
+  - name: full-k16-ep1
+    sku: 80G4-A100
+    sla_tier: basic
+    command:
+      - >-
+        CUDA_VISIBLE_DEVICES=0 python eval_compressor.py --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --data_path /mnt/default/bottleneck/data/parsed/visual_qa_v2.jsonl --video_dirs /mnt/default/bottleneck/data/videos --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K16_B2L_ep1.pt --max_samples 0 --shard_id 0 --num_shards 4 > $$AMLT_OUTPUT_DIR/shard0.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=1 python eval_compressor.py --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --data_path /mnt/default/bottleneck/data/parsed/visual_qa_v2.jsonl --video_dirs /mnt/default/bottleneck/data/videos --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K16_B2L_ep1.pt --max_samples 0 --shard_id 1 --num_shards 4 > $$AMLT_OUTPUT_DIR/shard1.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=2 python eval_compressor.py --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --data_path /mnt/default/bottleneck/data/parsed/visual_qa_v2.jsonl --video_dirs /mnt/default/bottleneck/data/videos --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K16_B2L_ep1.pt --max_samples 0 --shard_id 2 --num_shards 4 > $$AMLT_OUTPUT_DIR/shard2.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=3 python eval_compressor.py --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --data_path /mnt/default/bottleneck/data/parsed/visual_qa_v2.jsonl --video_dirs /mnt/default/bottleneck/data/videos --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K16_B2L_ep1.pt --max_samples 0 --shard_id 3 --num_shards 4 > $$AMLT_OUTPUT_DIR/shard3.txt 2>&1 &
+        wait
+  - name: full-k16-ep2
+    sku: 80G4-A100
+    sla_tier: basic
+    command:
+      - >-
+        CUDA_VISIBLE_DEVICES=0 python eval_compressor.py --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --data_path /mnt/default/bottleneck/data/parsed/visual_qa_v2.jsonl --video_dirs /mnt/default/bottleneck/data/videos --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K16_B2L_ep2.pt --max_samples 0 --shard_id 0 --num_shards 4 > $$AMLT_OUTPUT_DIR/shard0.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=1 python eval_compressor.py --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --data_path /mnt/default/bottleneck/data/parsed/visual_qa_v2.jsonl --video_dirs /mnt/default/bottleneck/data/videos --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K16_B2L_ep2.pt --max_samples 0 --shard_id 1 --num_shards 4 > $$AMLT_OUTPUT_DIR/shard1.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=2 python eval_compressor.py --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --data_path /mnt/default/bottleneck/data/parsed/visual_qa_v2.jsonl --video_dirs /mnt/default/bottleneck/data/videos --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K16_B2L_ep2.pt --max_samples 0 --shard_id 2 --num_shards 4 > $$AMLT_OUTPUT_DIR/shard2.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=3 python eval_compressor.py --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --data_path /mnt/default/bottleneck/data/parsed/visual_qa_v2.jsonl --video_dirs /mnt/default/bottleneck/data/videos --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K16_B2L_ep2.pt --max_samples 0 --shard_id 3 --num_shards 4 > $$AMLT_OUTPUT_DIR/shard3.txt 2>&1 &
+        wait
