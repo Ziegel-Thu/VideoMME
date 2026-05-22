@@ -48,18 +48,18 @@
 | Checkpoint | MCQ 全量 | MVBench | VME Short | NExT-QA |
 |------------|---------|---------|-----------|---------|
 | **Zeroshot** | **80.65%** ✅ | **59.01%** ✅ | **63.33%** ✅ | **74.84%** ✅ |
-| 006 B-1L ep1 | 70.08% ✅ | 42.22% ✅ | 42.89% ✅ | ❌ |
+| 006 B-1L ep1 | 70.08% ✅ | 42.22% ✅ | 42.89% ✅ (re-confirmed) | ❌ |
 | 006 B-2L ep2 | 69.59% ✅ | 42.58% ✅ | 43.00% ✅ | ❌ |
-| 007 inter-seg ep1 | 🕐 | 🕐 sterling | 40.33% ✅ | 🕐 sterling |
-| 007 inter-seg ep2 | 63.55% ✅ | ❌ | 🕐 旧代码 | ❌ |
+| 007 inter-seg ep1 | 🕐 running | 🕐 sterling | 40.33% ✅ | 🕐 sterling |
+| 007 inter-seg ep2 | 63.55% ✅ | ❌ | **41.33%** ✅ | ❌ |
 | 008 K=2 ep1 | �� | 🕐 sterling | 40.78% ✅ | 🕐 sterling |
-| 008 K=2 ep2 | 66.79% ✅ | ❌ | 🕐 旧代码 | ❌ |
+| 008 K=2 ep2 | 66.79% ✅ | ❌ | **41.33%** ✅ | ❌ |
 | 008 K=4 ep1 | 🕐 | 🕐 sterling | 42.22% ✅ | 🕐 sterling |
 | 008 K=4 ep2 | 67.07% ✅ | ❌ | 🕐 旧代码 | ❌ |
 | 008 K=8 ep1 | 🕐 | 🕐 sterling | 41.78% ✅ | 🕐 sterling |
 | 008 K=8 ep2 | 67.55% ✅ | ❌ | 🕐 旧代码 | ❌ |
 | 008 K=16 ep1 | 🕐 | 🕐 sterling | 42.22% ✅ | 🕐 sterling |
-| 008 K=16 ep2 | 68.57% ✅ | ❌ | 🕐 旧代码 | ❌ |
+| 008 K=16 ep2 | 68.57% ✅ | ❌ | **42.22%** ✅ | ❌ |
 | 009 pooling ep1 | 🕐 | 🕐 thorough-lion | ❌ | ❌ |
 | 010 gated ep1 | 🕐 | 🕐 thorough-lion | ❌ | ❌ |
 | 010 gated ep2 | 🕐 | ❌ | ❌ | ❌ |
