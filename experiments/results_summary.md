@@ -55,16 +55,16 @@
 | 007 inter-seg ep3 | 63.37% ✅ | ❌ | 39.89% ✅ | ❌ |
 | 008 K=2 ep1 | 🕐 提交 | 🕐 sterling | 40.78% ✅ | 🕐 sterling |
 | 008 K=2 ep2 | 66.79% ✅ | ❌ | 41.33% ✅ | ❌ |
-| 008 K=2 ep3 | ❌ | ❌ | 🕐 queued | ❌ |
+| 008 K=2 ep3 | ❌ | ❌ | 41.33% ✅ | ❌ |
 | 008 K=4 ep1 | 🕐 提交 | �� sterling | 42.22% ✅ | 🕐 sterling |
-| 008 K=4 ep2 | 67.07% ✅ | ❌ | 🕐 queued | ❌ |
+| 008 K=4 ep2 | 67.07% ✅ | ❌ | 42.89% ✅ | ❌ |
 | 008 K=4 ep3 | ❌ | ❌ | 42.33% ✅ | ❌ |
 | 008 K=8 ep1 | 🕐 running | 🕐 sterling | 41.78% ✅ | 🕐 sterling |
 | 008 K=8 ep2 | 67.55% ✅ | ❌ | 42.22% ✅ | ❌ |
 | 008 K=8 ep3 | ❌ | ❌ | 42.56% ✅ | ❌ |
 | 008 K=16 ep1 | 🕐 running | 🕐 sterling | 42.22% ✅ | 🕐 sterling |
 | 008 K=16 ep2 | 68.57% ✅ | ❌ | 42.22% ✅ | ❌ |
-| 008 K=16 ep3 | ❌ | ❌ | 🕐 queued | ❌ |
+| 008 K=16 ep3 | ❌ | ❌ | 42.33% ✅ | ❌ |
 | 009 pooling ep1 | 🕐 提交 | 🕐 thorough-lion | ❌ | ❌ |
 | 010 gated ep1 | 🕐 提交 | 🕐 thorough-lion | ❌ | ❌ |
 | 010 gated ep2 | 🕐 提交 | ❌ | ❌ | ❌ |
