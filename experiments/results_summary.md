@@ -43,26 +43,31 @@
 
 ## Eval 全景矩阵
 
-> ✅ = 可信结果 (sdpa 集群验证) | 🕐 = 已提交等结果 | ❌ = 未提交 | 🗑️ = 废弃 (eager)
+> ✅ = 可信结果 (sdpa 集群验证) | 🕐 = 已提交等结果 | ❌ = 未提交
 
 | Checkpoint | MCQ 全量 | MVBench | VME Short | NExT-QA |
 |------------|---------|---------|-----------|---------|
 | **Zeroshot** | **80.65%** ✅ | **59.01%** ✅ | **63.33%** ✅ | **74.84%** ✅ |
-| 006 B-1L ep1 | 70.08% ✅ | 42.22% ✅ | 42.89% ✅ (re-confirmed) | ❌ |
+| 006 B-1L ep1 | 70.08% ✅ | 42.22% ✅ | 42.89% ✅ | ❌ |
 | 006 B-2L ep2 | 69.59% ✅ | 42.58% ✅ | 43.00% ✅ | ❌ |
 | 007 inter-seg ep1 | 🕐 running | 🕐 sterling | 40.33% ✅ | 🕐 sterling |
-| 007 inter-seg ep2 | 63.55% ✅ | ❌ | **41.33%** ✅ | ❌ |
-| 008 K=2 ep1 | �� | 🕐 sterling | 40.78% ✅ | 🕐 sterling |
-| 008 K=2 ep2 | 66.79% ✅ | ❌ | **41.33%** ✅ | ❌ |
-| 008 K=4 ep1 | 🕐 | 🕐 sterling | 42.22% ✅ | 🕐 sterling |
-| 008 K=4 ep2 | 67.07% ✅ | ❌ | 🕐 旧代码 | ❌ |
-| 008 K=8 ep1 | 🕐 | 🕐 sterling | 41.78% ✅ | 🕐 sterling |
-| 008 K=8 ep2 | 67.55% ✅ | ❌ | 🕐 旧代码 | ❌ |
-| 008 K=16 ep1 | 🕐 | 🕐 sterling | 42.22% ✅ | 🕐 sterling |
-| 008 K=16 ep2 | 68.57% ✅ | ❌ | **42.22%** ✅ | ❌ |
-| 009 pooling ep1 | 🕐 | 🕐 thorough-lion | ❌ | ❌ |
-| 010 gated ep1 | 🕐 | 🕐 thorough-lion | ❌ | ❌ |
-| 010 gated ep2 | 🕐 | ❌ | ❌ | ❌ |
+| 007 inter-seg ep2 | 63.55% ✅ | ❌ | 🕐 running | ❌ |
+| 007 inter-seg ep3 | 63.37% ✅ | ❌ | 39.89% ✅ | ❌ |
+| 008 K=2 ep1 | 🕐 提交 | 🕐 sterling | 40.78% ✅ | 🕐 sterling |
+| 008 K=2 ep2 | 66.79% ✅ | ❌ | 41.33% ✅ | ❌ |
+| 008 K=2 ep3 | ❌ | ❌ | 🕐 queued | ❌ |
+| 008 K=4 ep1 | 🕐 提交 | �� sterling | 42.22% ✅ | 🕐 sterling |
+| 008 K=4 ep2 | 67.07% ✅ | ❌ | 🕐 queued | ❌ |
+| 008 K=4 ep3 | ❌ | ❌ | 42.33% ✅ | ❌ |
+| 008 K=8 ep1 | 🕐 running | 🕐 sterling | 41.78% ✅ | 🕐 sterling |
+| 008 K=8 ep2 | 67.55% ✅ | ❌ | 🕐 running | ❌ |
+| 008 K=8 ep3 | ❌ | ❌ | 42.56% ✅ | ❌ |
+| 008 K=16 ep1 | 🕐 running | 🕐 sterling | 42.22% ✅ | 🕐 sterling |
+| 008 K=16 ep2 | 68.57% ✅ | ❌ | 42.22% ✅ | ❌ |
+| 008 K=16 ep3 | ❌ | ❌ | 🕐 queued | ❌ |
+| 009 pooling ep1 | 🕐 提交 | 🕐 thorough-lion | ❌ | ❌ |
+| 010 gated ep1 | 🕐 提交 | 🕐 thorough-lion | ❌ | ❌ |
+| 010 gated ep2 | 🕐 提交 | ❌ | ❌ | ❌ |
 
 ---
 
