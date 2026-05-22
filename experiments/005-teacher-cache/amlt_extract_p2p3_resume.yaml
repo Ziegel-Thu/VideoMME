@@ -1,0 +1,47 @@
+description: "110K Teacher Cache p2/p3 补提 (带 resume, prefetch=0)"
+
+target:
+  service: sing
+  name: msrresrchbasicvc
+  workspace_name: msraairwsws
+
+environment:
+  image: amlt-sing/2.5.0-cuda12.4-cudnn9-devel
+  setup:
+    - pip install transformers==4.57.6 peft accelerate qwen-vl-utils decord pillow
+
+code:
+  local_dir: $CONFIG_DIR
+
+jobs:
+  - name: extract-110k-p2-resume
+    sku: 80G4-A100-NvLink
+    sla_tier: standard
+    command:
+      - >-
+        torchrun --nproc_per_node=4 --master_port=29502 extract_teacher.py
+        --data_path /mnt/default/bottleneck/data/parsed/visual_qa_v3_60s_train.jsonl
+        --video_dirs /mnt/default/bottleneck/data/videos/0_30_s_academic_v0_1,/mnt/default/bottleneck/data/videos/30_60_s_academic_v0_1
+        --output_dir /mnt/default/bottleneck/teacher_cache_110k_v2
+        --model_path Qwen/Qwen2.5-VL-7B-Instruct
+        --start_idx 36676 --end_idx 55014
+        --shard_size 512 --shard_prefix p2
+        --fps 1.0 --frames_per_segment 2 --max_frames 30
+        --prefetch_workers 0 --resume
+        2>&1 | tee $$AMLT_OUTPUT_DIR/extract_log.txt
+
+  - name: extract-110k-p3-resume
+    sku: 80G4-A100-NvLink
+    sla_tier: standard
+    command:
+      - >-
+        torchrun --nproc_per_node=4 --master_port=29503 extract_teacher.py
+        --data_path /mnt/default/bottleneck/data/parsed/visual_qa_v3_60s_train.jsonl
+        --video_dirs /mnt/default/bottleneck/data/videos/0_30_s_academic_v0_1,/mnt/default/bottleneck/data/videos/30_60_s_academic_v0_1
+        --output_dir /mnt/default/bottleneck/teacher_cache_110k_v2
+        --model_path Qwen/Qwen2.5-VL-7B-Instruct
+        --start_idx 55014 --end_idx 73352
+        --shard_size 512 --shard_prefix p3
+        --fps 1.0 --frames_per_segment 2 --max_frames 30
+        --prefetch_workers 0 --resume
+        2>&1 | tee $$AMLT_OUTPUT_DIR/extract_log.txt
