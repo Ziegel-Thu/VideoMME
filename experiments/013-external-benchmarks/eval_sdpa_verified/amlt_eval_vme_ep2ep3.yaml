@@ -1,0 +1,122 @@
+description: "VME Short ep2/ep3 007+K-sweep (旧代码 sdpa)"
+target:
+  service: sing
+  name: msrresrchbasicvc
+  workspace_name: msraairwsws
+environment:
+  image: amlt-sing/2.5.0-cuda12.4-cudnn9-devel
+  setup:
+    - pip install --no-cache-dir transformers==4.57.6 peft accelerate qwen-vl-utils decord pillow pandas pyarrow
+code:
+  local_dir: $CONFIG_DIR
+jobs:
+  - name: vme-006-b1l-ep1
+    sku: 80G4-A100
+    sla_tier: basic
+    command:
+      - >-
+        CUDA_VISIBLE_DEVICES=0 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/006_compressor/110k_B1L_ep1.pt --shard_id 0 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard0.json > $$AMLT_OUTPUT_DIR/shard0.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=1 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/006_compressor/110k_B1L_ep1.pt --shard_id 1 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard1.json > $$AMLT_OUTPUT_DIR/shard1.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=2 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/006_compressor/110k_B1L_ep1.pt --shard_id 2 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard2.json > $$AMLT_OUTPUT_DIR/shard2.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=3 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/006_compressor/110k_B1L_ep1.pt --shard_id 3 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard3.json > $$AMLT_OUTPUT_DIR/shard3.txt 2>&1 &
+        wait
+  - name: vme-007-ep2
+    sku: 80G4-A100
+    sla_tier: basic
+    command:
+      - >-
+        CUDA_VISIBLE_DEVICES=0 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/007_interseg/110k_interseg_B1L_ep2.pt --shard_id 0 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard0.json > $$AMLT_OUTPUT_DIR/shard0.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=1 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/007_interseg/110k_interseg_B1L_ep2.pt --shard_id 1 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard1.json > $$AMLT_OUTPUT_DIR/shard1.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=2 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/007_interseg/110k_interseg_B1L_ep2.pt --shard_id 2 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard2.json > $$AMLT_OUTPUT_DIR/shard2.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=3 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/007_interseg/110k_interseg_B1L_ep2.pt --shard_id 3 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard3.json > $$AMLT_OUTPUT_DIR/shard3.txt 2>&1 &
+        wait
+  - name: vme-007-ep3
+    sku: 80G4-A100
+    sla_tier: basic
+    command:
+      - >-
+        CUDA_VISIBLE_DEVICES=0 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/007_interseg/110k_interseg_B1L_ep3.pt --shard_id 0 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard0.json > $$AMLT_OUTPUT_DIR/shard0.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=1 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/007_interseg/110k_interseg_B1L_ep3.pt --shard_id 1 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard1.json > $$AMLT_OUTPUT_DIR/shard1.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=2 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/007_interseg/110k_interseg_B1L_ep3.pt --shard_id 2 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard2.json > $$AMLT_OUTPUT_DIR/shard2.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=3 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/007_interseg/110k_interseg_B1L_ep3.pt --shard_id 3 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard3.json > $$AMLT_OUTPUT_DIR/shard3.txt 2>&1 &
+        wait
+  - name: vme-k2-ep2
+    sku: 80G4-A100
+    sla_tier: basic
+    command:
+      - >-
+        CUDA_VISIBLE_DEVICES=0 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K2_B2L_ep2.pt --shard_id 0 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard0.json > $$AMLT_OUTPUT_DIR/shard0.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=1 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K2_B2L_ep2.pt --shard_id 1 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard1.json > $$AMLT_OUTPUT_DIR/shard1.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=2 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K2_B2L_ep2.pt --shard_id 2 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard2.json > $$AMLT_OUTPUT_DIR/shard2.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=3 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K2_B2L_ep2.pt --shard_id 3 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard3.json > $$AMLT_OUTPUT_DIR/shard3.txt 2>&1 &
+        wait
+  - name: vme-k2-ep3
+    sku: 80G4-A100
+    sla_tier: basic
+    command:
+      - >-
+        CUDA_VISIBLE_DEVICES=0 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K2_B2L_ep3.pt --shard_id 0 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard0.json > $$AMLT_OUTPUT_DIR/shard0.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=1 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K2_B2L_ep3.pt --shard_id 1 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard1.json > $$AMLT_OUTPUT_DIR/shard1.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=2 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K2_B2L_ep3.pt --shard_id 2 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard2.json > $$AMLT_OUTPUT_DIR/shard2.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=3 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K2_B2L_ep3.pt --shard_id 3 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard3.json > $$AMLT_OUTPUT_DIR/shard3.txt 2>&1 &
+        wait
+  - name: vme-k4-ep2
+    sku: 80G4-A100
+    sla_tier: basic
+    command:
+      - >-
+        CUDA_VISIBLE_DEVICES=0 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K4_B2L_ep2.pt --shard_id 0 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard0.json > $$AMLT_OUTPUT_DIR/shard0.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=1 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K4_B2L_ep2.pt --shard_id 1 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard1.json > $$AMLT_OUTPUT_DIR/shard1.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=2 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K4_B2L_ep2.pt --shard_id 2 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard2.json > $$AMLT_OUTPUT_DIR/shard2.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=3 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K4_B2L_ep2.pt --shard_id 3 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard3.json > $$AMLT_OUTPUT_DIR/shard3.txt 2>&1 &
+        wait
+  - name: vme-k4-ep3
+    sku: 80G4-A100
+    sla_tier: basic
+    command:
+      - >-
+        CUDA_VISIBLE_DEVICES=0 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K4_B2L_ep3.pt --shard_id 0 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard0.json > $$AMLT_OUTPUT_DIR/shard0.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=1 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K4_B2L_ep3.pt --shard_id 1 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard1.json > $$AMLT_OUTPUT_DIR/shard1.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=2 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K4_B2L_ep3.pt --shard_id 2 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard2.json > $$AMLT_OUTPUT_DIR/shard2.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=3 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K4_B2L_ep3.pt --shard_id 3 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard3.json > $$AMLT_OUTPUT_DIR/shard3.txt 2>&1 &
+        wait
+  - name: vme-k8-ep2
+    sku: 80G4-A100
+    sla_tier: basic
+    command:
+      - >-
+        CUDA_VISIBLE_DEVICES=0 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K8_B2L_ep2.pt --shard_id 0 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard0.json > $$AMLT_OUTPUT_DIR/shard0.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=1 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K8_B2L_ep2.pt --shard_id 1 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard1.json > $$AMLT_OUTPUT_DIR/shard1.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=2 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K8_B2L_ep2.pt --shard_id 2 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard2.json > $$AMLT_OUTPUT_DIR/shard2.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=3 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K8_B2L_ep2.pt --shard_id 3 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard3.json > $$AMLT_OUTPUT_DIR/shard3.txt 2>&1 &
+        wait
+  - name: vme-k8-ep3
+    sku: 80G4-A100
+    sla_tier: basic
+    command:
+      - >-
+        CUDA_VISIBLE_DEVICES=0 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K8_B2L_ep3.pt --shard_id 0 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard0.json > $$AMLT_OUTPUT_DIR/shard0.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=1 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K8_B2L_ep3.pt --shard_id 1 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard1.json > $$AMLT_OUTPUT_DIR/shard1.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=2 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K8_B2L_ep3.pt --shard_id 2 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard2.json > $$AMLT_OUTPUT_DIR/shard2.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=3 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K8_B2L_ep3.pt --shard_id 3 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard3.json > $$AMLT_OUTPUT_DIR/shard3.txt 2>&1 &
+        wait
+  - name: vme-k16-ep2
+    sku: 80G4-A100
+    sla_tier: basic
+    command:
+      - >-
+        CUDA_VISIBLE_DEVICES=0 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K16_B2L_ep2.pt --shard_id 0 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard0.json > $$AMLT_OUTPUT_DIR/shard0.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=1 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K16_B2L_ep2.pt --shard_id 1 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard1.json > $$AMLT_OUTPUT_DIR/shard1.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=2 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K16_B2L_ep2.pt --shard_id 2 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard2.json > $$AMLT_OUTPUT_DIR/shard2.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=3 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K16_B2L_ep2.pt --shard_id 3 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard3.json > $$AMLT_OUTPUT_DIR/shard3.txt 2>&1 &
+        wait
+  - name: vme-k16-ep3
+    sku: 80G4-A100
+    sla_tier: basic
+    command:
+      - >-
+        CUDA_VISIBLE_DEVICES=0 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K16_B2L_ep3.pt --shard_id 0 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard0.json > $$AMLT_OUTPUT_DIR/shard0.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=1 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K16_B2L_ep3.pt --shard_id 1 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard1.json > $$AMLT_OUTPUT_DIR/shard1.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=2 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K16_B2L_ep3.pt --shard_id 2 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard2.json > $$AMLT_OUTPUT_DIR/shard2.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=3 python eval_videomme_short.py --video_dir /mnt/default/bottleneck/benchmarks/videomme/videos --parquet_path /mnt/default/bottleneck/benchmarks/videomme/test.parquet --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --checkpoint /mnt/default/bottleneck/checkpoints/008_ksweep/110k_K16_B2L_ep3.pt --shard_id 3 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard3.json > $$AMLT_OUTPUT_DIR/shard3.txt 2>&1 &
+        wait
