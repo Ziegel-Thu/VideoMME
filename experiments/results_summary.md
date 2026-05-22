@@ -13,7 +13,33 @@
 ## Loss 定义
 
 | Loss | 公式 | 说明 |
-|------|------|------|
+|---
+
+## ⚠️ 已知问题
+
+### attn_implementation sdpa vs eager 数值差异
+
+**发现**: compressor eval 中 sdpa 和 eager 的 logits 差 ~0.75-1.0（bfloat16 累积误差），导致 MCQ 准确率差 ~4%。
+
+**原因**: sdpa (`F.scaled_dot_product_attention`) 和 eager（手动矩阵乘法）在 bfloat16 下数值精度不同。28 层 transformer 后累积误差放大，在 logit 边界上翻转部分答案。
+
+**影响**:
+- VME Short ep1 结果（40-42%）是 sdpa 跑的 → ✅ 可信
+- MVBench ep1 结果（35-38%）是 eager 跑的 → 数值和 sdpa 不可比
+- NExT-QA zeroshot (74.84%) 用 eager → 可信（zeroshot 不走 compressor）
+- 所有 compressor 模式的 eager 结果需要用 sdpa 重跑才能和 VME 结果对齐
+
+**决策**: 统一用 sdpa（和训练一致，速度更快）。需要重跑的：所有 MVBench/NExT-QA compressor eval。
+
+### 011/012 Temporal 训练失败
+
+011 temporal B (teaching-anteater): 10 epoch 全部 avg_loss=0, n=0。训练跑了 16h 但零有效样本。
+012 temporal C (relevant-calf): 可能同样问题（待确认）。
+原因未查明，猜测是 blob 视频路径不匹配。
+
+---
+
+---|------|------|
 | **B** | MSE(student Q-hidden, teacher Q-hidden) | 压缩后过 LLM，在 Q 位置对齐 hidden state |
 | **D** | MSE(student KV pool, teacher KV pool) | 直接对齐 KV cache 的 per-layer mean pool |
 | **BD** | B + D | 两者都算 |

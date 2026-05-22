@@ -247,7 +247,7 @@ def main(args):
     from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
     model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
         args.model_path, torch_dtype=torch.bfloat16,
-        attn_implementation="eager",
+        attn_implementation="sdpa" if args.checkpoint else "eager",
     ).to(device)
     model.eval()
     processor = AutoProcessor.from_pretrained(args.model_path)
