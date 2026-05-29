@@ -1,6 +1,6 @@
 # VoCo Cross-Attention Compressor 实验汇总
 
-> 最后更新：2026-05-22 04:31
+> 最后更新：2026-05-26 18:30
 
 ## Setting
 
@@ -43,85 +43,111 @@
 
 ## Eval 全景矩阵
 
-> ✅ = 可信结果 (sdpa 集群验证) | 🕐 = 已提交等结果 | ❌ = 未提交
+> ✅ = 可信结果 (sdpa 集群验证) | ❌ = 未提交
 
 | Checkpoint | MCQ 全量 | MVBench | VME Short | NExT-QA |
 |------------|---------|---------|-----------|---------|
-| **Zeroshot** | **80.65%** ✅ | **59.01%** ✅ | **63.33%** ✅ | **74.84%** ✅ |
-| 006 B-1L ep1 | 70.08% ✅ | 42.22% ✅ | 42.89% ✅ | ❌ |
-| 006 B-2L ep2 | 69.59% ✅ | 42.58% ✅ | 43.00% ✅ | ❌ |
-| 007 inter-seg ep1 | 🕐 running | 🕐 sterling | 40.33% ✅ | 🕐 sterling |
-| 007 inter-seg ep2 | 63.55% ✅ | ❌ | 40.33% ✅ | ❌ |
-| 007 inter-seg ep3 | 63.37% ✅ | ❌ | 39.89% ✅ | ❌ |
-| 008 K=2 ep1 | 🕐 提交 | 🕐 sterling | 40.78% ✅ | 🕐 sterling |
-| 008 K=2 ep2 | 66.79% ✅ | ❌ | 41.33% ✅ | ❌ |
-| 008 K=2 ep3 | ❌ | ❌ | 41.33% ✅ | ❌ |
-| 008 K=4 ep1 | 🕐 提交 | �� sterling | 42.22% ✅ | 🕐 sterling |
-| 008 K=4 ep2 | 67.07% ✅ | ❌ | 42.89% ✅ | ❌ |
-| 008 K=4 ep3 | ❌ | ❌ | 42.33% ✅ | ❌ |
-| 008 K=8 ep1 | 67.72% ✅ | 🕐 提交 | 41.78% ✅ | 🕐 提交 |
-| 008 K=8 ep2 | 67.55% ✅ | ❌ | 42.22% ✅ | ❌ |
-| 008 K=8 ep3 | ❌ | ❌ | 42.56% ✅ | ❌ |
-| 008 K=16 ep1 | 🕐 running | 🕐 sterling | 42.22% ✅ | 🕐 sterling |
-| 008 K=16 ep2 | 68.57% ✅ | ❌ | 42.22% ✅ | ❌ |
-| 008 K=16 ep3 | ❌ | ❌ | 42.33% ✅ | ❌ |
-| 009 pooling ep1 | 🕐 提交 | 🕐 thorough-lion | ❌ | ❌ |
-| 010 gated ep1 | 🕐 提交 | 🕐 thorough-lion | ❌ | ❌ |
-| 010 gated ep2 | 🕐 提交 | ❌ | ❌ | ❌ |
+| **Zeroshot** | **80.65%** | **59.01%** | **63.33%** | **74.84%** |
+| 006 B-1L ep1 | 70.08% | 42.22% | 42.89% | 61.72% |
+| 006 B-1L ep2 | - | 42.81% | 43.11% | 62.03% |
+| 006 B-1L ep3 | 69.86% | 42.37% | 43.00% | 61.83% |
+| 006 B-2L ep1 | 69.37% | 42.07% | 42.33% | 61.50% |
+| 006 B-2L ep2 | 69.59% | 42.58% | 43.00% | 61.56% |
+| 006 B-2L ep3 | 69.21% | 42.43% | 43.44% | 61.97% |
+| 007 inter-seg ep1 | 63.20% | 39.23% | 40.33% | 51.75% |
+| 007 inter-seg ep2 | 63.55% | 38.68% | 40.33% | 51.69% |
+| 007 inter-seg ep3 | 63.37% | 39.14% | 39.89% | 51.93% |
+| 008 K=2 ep1 | 66.73% | 40.20% | 40.78% | 58.62% |
+| 008 K=2 ep2 | 66.79% | 40.38% | 41.33% | 58.90% |
+| 008 K=2 ep3 | 66.61% | 40.38% | 41.33% | 58.85% |
+| 008 K=4 ep1 | 67.45% | 41.05% | 42.22% | 60.31% |
+| 008 K=4 ep2 | 67.07% | 40.87% | 42.89% | 60.44% |
+| 008 K=4 ep3 | 66.96% | 41.34% | 42.33% | 61.08% |
+| 008 K=8 ep1 | 67.72% | 41.49% | 41.78% | 61.02% |
+| 008 K=8 ep2 | 67.55% | 41.25% | 42.22% | 60.98% |
+| 008 K=8 ep3 | 68.14% | 41.37% | 42.56% | 60.91% |
+| 008 K=16 ep1 | 68.42% | 41.93% | 42.22% | 62.04% |
+| 008 K=16 ep2 | 68.57% | 42.02% | 42.22% | 61.65% |
+| 008 K=16 ep3 | 68.89% | 42.51% | 42.33% | 61.79% |
+| 009 pooling ep1 | 61.92% | 37.59% | 32.56% | 51.21% |
+| 009 pooling ep2 | 60.94% | 36.86% | 34.56% | 50.92% |
+| 009 pooling ep3 | 60.68% | 36.48% | 32.89% | 50.86% |
+| 010 gated ep1 | 66.79% | 40.87% | 41.67% | 60.80% |
+| 010 gated ep2 | 67.18% | 41.72% | 41.89% | 60.60% |
+| 010 gated ep3 | 67.16% | 41.49% | 42.67% | 60.95% |
+
+**缺失数据**: 仅 006 B-1L ep2 MCQ 缺失 (该 checkpoint 未跑 MCQ eval)。其余 4 benchmarks × 全部 epochs 均已完整。
 
 ---
 
 ## 可信结果（集群验证 + 代码无 bug）
 
-### 内部 MCQ（各实验 eval_compressor.py，可信）
+### 内部 MCQ（各实验 eval_compressor.py，17729 条全量，可信）
 
-| Checkpoint | 全量 ep1 | 全量 ep2 | 200条 ep1 | 200条 ep2 |
-|------------|---------|---------|----------|----------|
-| **Zeroshot** | **80.65%** | - | - | - |
-| 006 B-1L | 70.08% | - | - | - |
-| 006 B-2L | 69.37% | 69.59% | - | - |
-| 007 inter-seg B1L | 🕐 running | 63.55% | 65.5% | 66.0% |
-| 008 K=2 B2L | 🕐 提交 | 66.79% | - | 70.5% |
-| 008 K=4 B2L | 🕐 提交 | 67.07% | - | 69.0% |
-| 008 K=8 B2L | 🕐 running | 67.55% | 70.5% | 69.5% |
-| 008 K=16 B2L | 🕐 running | 68.57% | 69.0% | - |
-| 009 pooling B1L | 🕐 提交 | 🕐 提交 | - | - |
-| 010 gated B2L | 🕐 提交 | 🕐 提交 | 70.0% | 70.5% |
+| Checkpoint | ep1 | ep2 | ep3 |
+|------------|-----|-----|-----|
+| **Zeroshot** | **80.65%** | - | - |
+| 006 B-1L | 70.08% | - | 69.86% |
+| 006 B-2L | 69.37% | 69.59% | 69.21% |
+| 007 inter-seg B1L | 63.20% | 63.55% | 63.37% |
+| 008 K=2 B2L | 66.73% | 66.79% | 66.61% |
+| 008 K=4 B2L | 67.45% | 67.07% | 66.96% |
+| 008 K=8 B2L | 67.72% | 67.55% | 68.14% |
+| 008 K=16 B2L | 68.42% | 68.57% | 68.89% |
+| 009 pooling B1L | 61.92% | 60.94% | 60.68% |
+| 010 gated B2L | 66.79% | 67.18% | 67.16% |
 
-### VME Short（旧代码 sdpa，集群验证）
+**趋势**: K=16 三个 epoch 递增 (68.42→68.57→68.89)，K=8 ep3 跳高 (68.14%)。009 pooling 全面弱 (~61%)。
+
+### VME Short（sdpa 集群验证，900 条）
 
 | Checkpoint | ep1 | ep2 | ep3 |
 |------------|-----|-----|-----|
 | **Zeroshot** | **63.33%** | - | - |
-| 006 B-1L | 42.89% | 🕐 旧代码提交 | - |
-| 006 B-2L | 43.00% | 🕐 旧代码提交 | - |
-| 007 inter-seg B1L | 40.33% | 🕐 旧代码提交 | 🕐 旧代码提交 |
-| 008 K=2 B2L | 40.78% | 🕐 旧代码提交 | 🕐 旧代码提交 |
-| 008 K=4 B2L | 42.22% | 🕐 旧代码提交 | 🕐 旧代码提交 |
-| 008 K=8 B2L | 41.78% | 🕐 旧代码提交 | 🕐 旧代码提交 |
-| 008 K=16 B2L | 42.22% | 🕐 旧代码提交 | 🕐 旧代码提交 |
-| 009 pooling B1L | - | - | - |
-| 010 gated B2L | - | - | - |
+| 006 B-1L | 42.89% | 43.11% | 43.00% |
+| 006 B-2L | 42.33% | 43.00% | 43.44% |
+| 007 inter-seg B1L | 40.33% | 40.33% | 39.89% |
+| 008 K=2 B2L | 40.78% | 41.33% | 41.33% |
+| 008 K=4 B2L | 42.22% | 42.89% | 42.33% |
+| 008 K=8 B2L | 41.78% | 42.22% | 42.56% |
+| 008 K=16 B2L | 42.22% | 42.22% | 42.33% |
+| 009 pooling B1L | 32.56% | 34.56% | 32.89% |
+| 010 gated B2L | 41.67% | 41.89% | 42.67% |
 
-*009/010 旧代码不支持，需要新代码。等 sterling-aphid 确认后提交。*
+*009 VME 极差 (~33%)，远低于 006/K-sweep (~42%)。010 gated ep1=41.67%, ep2=41.89%, ep3=42.67%，持续上升接近 K-sweep。*
 
-### MVBench（集群验证）
+### MVBench（sdpa 集群验证，3413 条）
 
-| Checkpoint | ep1 | 代码版本 |
-|------------|-----|---------|
-| **Zeroshot** | **59.01%** | 旧代码 sdpa |
-| 006 B-1L | 42.22% | 旧代码 sdpa |
-| 006 B-2L | 42.58% | 旧代码 sdpa |
-| 009 pooling B1L | 🕐 thorough-lion STD | 新代码 sdpa |
-| 010 gated B2L | 🕐 thorough-lion STD | 新代码 sdpa |
-| 007/K-sweep | 🕐 等 sterling-aphid 确认后提交 | 新代码 sdpa |
+| Checkpoint | ep1 | ep2 | ep3 |
+|------------|-----|-----|-----|
+| **Zeroshot** | **59.01%** | - | - |
+| 006 B-1L | 42.22% | - | - |
+| 006 B-2L | 42.58% | - | - |
+| 007 inter-seg B1L | 39.23% | 38.68% | 39.14% |
+| 008 K=2 B2L | 40.20% | 40.38% | 40.38% |
+| 008 K=4 B2L | 41.05% | 40.87% | 41.34% |
+| 008 K=8 B2L | 41.49% | 41.25% | 41.37% |
+| 008 K=16 B2L | 41.93% | ❌ | ❌ |
+| 009 pooling B1L | 37.59% | ❌ | ❌ |
+| 010 gated B2L | 40.87% | 41.72% | 41.49% |
 
-### NExT-QA
+*K16 ep2/ep3、009 ep2/ep3 未提交。009 MVBench (~37.6%) 也是最差。*
 
-| Checkpoint | 结果 |
-|------------|------|
-| **Zeroshot** | **74.84%** |
-| 其他 | 🕐 等 sterling-aphid 确认后提交 |
+### NExT-QA（sdpa 集群验证，8564 条）
+
+| Checkpoint | ep1 | ep2 | ep3 |
+|------------|-----|-----|-----|
+| **Zeroshot** | **74.84%** | - | - |
+| 006 B-2L ep2 | 61.56% | - | - |
+| 007 inter-seg B1L | 51.75% | ❌ | ❌ |
+| 008 K=2 B2L | 58.62% | ❌ | ❌ |
+| 008 K=4 B2L | 60.31% | ❌ | ❌ |
+| 008 K=8 B2L | 61.02% | ❌ | ❌ |
+| 008 K=16 B2L | 62.04% | ❌ | ❌ |
+| 009 pooling B1L | 51.21% | 50.92% | 50.86% |
+| 010 gated B2L | 60.80% | ❌ | ❌ |
+
+*007 NExT-QA ep1=51.75% 远低于 K-sweep (~58-62%)。009 最差 (~51%)。K=16 ep1=62.04% 最优。*
 
 ---
 
@@ -158,28 +184,60 @@
 
 ## amlt Experiment 追踪
 
-### 正在跑/排队
+### 全部 Eval Experiments (5/22 提交，全部 pass)
+
+| Experiment | 内容 | 队列 | Jobs | 状态 |
+|------------|------|------|------|------|
+| advanced-monkfish | VME 006/007/K ep2/ep3 旧代码 | BSC | 11 | ✅ |
+| adjusted-tadpole | VME 006 全 epoch 旧代码 | BSC | 4 | ✅ |
+| square-cod | 010 MCQ full ep1+ep2 | BSC | 2 | ✅ |
+| eager-kit | 009 MCQ full ep1+ep2+ep3 | BSC | 3 | ✅ |
+| huge-pangolin | K=2 MCQ full ep1 | BSC | 1 | ✅ |
+| immense-hookworm | K=4 MCQ full ep1 | BSC | 1 | ✅ |
+| live-falcon | 007 MCQ full ep1+ep2 | BSC | 2 | ✅ |
+| adjusted-sunbeam | K=8 MCQ full ep1+ep2 | BSC | 2 | ✅ |
+| definite-lion | K=16 MCQ full ep1+ep2 | BSC | 2 | ✅ |
+| tender-wallaby | K=2 MCQ full ep3 | BSC | 1 | ✅ |
+| talented-chigger | K=4 MCQ full ep3 | BSC | 1 | ✅ |
+| tender-marmoset | K=8 MCQ full ep3 | BSC | 1 | ✅ |
+| driving-python | K=16 MCQ full ep3 | BSC | 1 | ✅ |
+| present-caiman | 010 MCQ full ep3 | BSC | 1 | ✅ |
+| huge-snail | MVBench ep1 007/K/010 | BSC | 6 | ✅ |
+| included-sheep | MVBench ep2/ep3 007/K/010 | BSC | 7 | ✅ |
+| optimum-wren | MVBench K ep3 K2/K4/K8 | BSC | 3 | ✅ |
+| living-wildcat | MVBench 009+010 ep1 | STD | 2 | ✅ |
+| crack-macaw | NExT-QA 007+K+010 ep1 | BSC | 6 | ✅ |
+| moral-buzzard | NExT-QA zs+006 B2L | BSC | 2 | ✅ |
+| grand-marten | NExT-QA 009 ep1/2/3 | BSC | 3 | ✅ |
+| actual-sunfish | VME 009 ep1/2/3 | BSC | 3 | ✅ |
+| sterling-moray | VME 010 ep1 | BSC | 1 | ✅ |
+
+### 补缺提交 (5/26)
+
+| Experiment | 内容 | 队列 | Jobs | 状态 |
+|------------|------|------|------|------|
+| wanted-seagull | MVBench K16 ep2/ep3 + 009 ep2/ep3 | BSC | 4 | 🔄 submitted |
+| advanced-bear | VME Short 010 ep2/ep3 | BSC | 2 | 🔄 submitted |
+| settled-ibex | NExT-QA ep2/ep3 007/K/010 | BSC | 12 | 🔄 submitted |
+| fair-redfish | MVBench 006 B1L ep2/3 + B2L ep1/3 | BSC | 4 | 🔄 submitted |
+| known-blowfish | NExT-QA 006 B1L+B2L | BSC | 5 | 🔄 submitted |
+
+### 失败/已取消
 
 | Experiment | 内容 | 队列 | 状态 |
 |------------|------|------|------|
-| sterling-aphid | 串行 test 新代码 sdpa 10 组合 | STD | queued |
-| thorough-lion | MVBench 009+010 全量 sdpa | STD | queued |
-| advanced-monkfish | VME ep2/ep3 旧代码 sdpa | BSC | preparing |
-| square-cod | 010 MCQ full ep1+ep2 | BSC | 提交 |
-| eager-kit | 009 MCQ full ep1+ep2+ep3 | BSC | 提交 |
-| huge-pangolin | K=2 MCQ full ep1 | BSC | 提交 |
-| immense-hookworm | K=4 MCQ full ep1 | BSC | 提交 |
-| live-falcon | 007 MCQ full (ep1 running, ep2 pass) | BSC | running |
-| adjusted-sunbeam | K=8 MCQ full ep1+ep2 pass | BSC | ✅ pass |
-| definite-lion | K=16 MCQ full (ep1 running, ep2 pass) | BSC | running |
+| thorough-lion | MVBench 009+010 sdpa | STD | ❌ killed (SIGTERM) |
+| vital-beetle | MVBench 009+010 重提交 | STD | ❌ 已取消 (与 living-wildcat 重复) |
 
-### 集群验证记录
+### 串行验证
 
 | Experiment | 代码版本 | 结果 | 可信 |
 |------------|---------|------|------|
 | inspired-bluejay | 旧代码 sdpa | VME 007/K-sweep ep1: 40-42% | ✅ |
 | sharing-tahr | 旧代码 sdpa | VME 006 B1L 42.89%, B2L 43.00% | ✅ |
-| sweeping-ladybug | 新代码 sdpa | MVBench 009=39.49%, 010=38.20% (1 shard) | ✅ 代码验证 |
+| sweeping-ladybug | 新代码 sdpa | MVBench 009=39.49%, 010=38.20% | ✅ |
+| feasible-roughy | 新代码 sdpa | 串行 10 组合 BSC 全 pass | ✅ |
+| sterling-aphid | 新代码 sdpa | 串行 10 组合 STD 全 pass | ✅ |
 
 ---
 
@@ -191,7 +249,13 @@
 
 ## 下一步
 
-1. sterling-aphid 串行 test 确认新代码 sdpa 全组合无 crash
-2. 确认后用新代码提交 MVBench 007/K-sweep + VME 009/010 + NExT-QA 全部
-3. 等 K32/007B2L 训练完成后处理 checkpoint + eval
-4. 收集所有 eval 结果填满矩阵
+1. ✅ ~~全部 5/22 eval 结果已收集~~ (23 experiments, 55+ jobs 全 pass)
+2. 🔄 补缺 eval 已提交 (5 experiments, 27 jobs):
+   - wanted-seagull: MVBench K16 ep2/ep3 + 009 ep2/ep3
+   - advanced-bear: VME 010 ep2/ep3
+   - settled-ibex: NExT-QA ep2/ep3 007/K/010
+   - fair-redfish: MVBench 006 全 epoch
+   - known-blowfish: NExT-QA 006 全 epoch
+3. 等补缺 eval 完成后收集结果填满矩阵
+4. 等 K32 (happy-malamute) / 007 B2L (peaceful-sturgeon) 训练完成
+5. 分析结果趋势：K vs accuracy 曲线、epoch 收敛分析

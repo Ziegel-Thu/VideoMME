@@ -21,3 +21,9 @@ outputs*/
 .DS_Store
 .vscode/
 *.swp
+# AMLT 下载结果
+results_*/
+
+# AMLT 本地缓存
+amlt/
+.amltconfig
