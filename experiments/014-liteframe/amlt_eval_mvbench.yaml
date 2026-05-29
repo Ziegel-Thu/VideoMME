@@ -1,0 +1,26 @@
+description: "014 LiteFrame CTD eval — MVBench (student encoder, no LMA)"
+
+target:
+  service: sing
+  name: msrresrchbasicvc
+  workspace_name: msraairwsws
+
+environment:
+  image: amlt-sing/2.5.0-cuda12.4-cudnn9-devel
+  setup:
+    - pip install transformers==4.57.6 peft accelerate qwen-vl-utils decord pillow
+
+code:
+  local_dir: $CONFIG_DIR
+
+jobs:
+  - name: mvbench-liteframe
+    sku: 80G4-A100-NvLink
+    sla_tier: standard
+    command:
+      - >-
+        CUDA_VISIBLE_DEVICES=0 python eval_liteframe_mvbench.py --video_base /mnt/default/bottleneck/benchmarks/mvbench/videos --json_base /mnt/default/bottleneck/benchmarks/mvbench/json --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --student_ckpt checkpoint_final.pt --num_frames 4 --shard_id 0 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard0.json > $$AMLT_OUTPUT_DIR/shard0.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=1 python eval_liteframe_mvbench.py --video_base /mnt/default/bottleneck/benchmarks/mvbench/videos --json_base /mnt/default/bottleneck/benchmarks/mvbench/json --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --student_ckpt checkpoint_final.pt --num_frames 4 --shard_id 1 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard1.json > $$AMLT_OUTPUT_DIR/shard1.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=2 python eval_liteframe_mvbench.py --video_base /mnt/default/bottleneck/benchmarks/mvbench/videos --json_base /mnt/default/bottleneck/benchmarks/mvbench/json --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --student_ckpt checkpoint_final.pt --num_frames 4 --shard_id 2 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard2.json > $$AMLT_OUTPUT_DIR/shard2.txt 2>&1 &
+        CUDA_VISIBLE_DEVICES=3 python eval_liteframe_mvbench.py --video_base /mnt/default/bottleneck/benchmarks/mvbench/videos --json_base /mnt/default/bottleneck/benchmarks/mvbench/json --model_path /mnt/default/bottleneck/models/Qwen2.5-VL-7B-Instruct --student_ckpt checkpoint_final.pt --num_frames 4 --shard_id 3 --num_shards 4 --output $$AMLT_OUTPUT_DIR/shard3.json > $$AMLT_OUTPUT_DIR/shard3.txt 2>&1 &
+        wait
